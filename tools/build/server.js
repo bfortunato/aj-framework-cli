@@ -56,7 +56,7 @@ var main = require("./../app/js/main.js");
 var aj = require("./../app/js/aj/index.js");
 
 http.listen(3000, function () {
-    console.log("Applica mobile-framework server listening on " + ip.address() + ":3000");
+    console.log("AJ debug server listening on " + ip.address() + ":3000");
 
     var appPath = process.argv[2];
 

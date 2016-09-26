@@ -1,8 +1,11 @@
 "use strict";
 
+const fs = require("fs");
+
 export const android = {
+    name: "android",
     mapAssetPath: function(path) {
-        return "platforms/android/AJ/app/src/main/assets/" + path
+        return "platforms/android/App/app/src/main/assets/" + path
     },
     mapImagePath: function(dir, name, extension, ratio) {
         var quality = "";
@@ -25,14 +28,15 @@ export const android = {
 
         }
 
-        return "platforms/android/AJ/app/src/main/res/drawable" + quality + "/" + name + extension;
+        return "platforms/android/App/app/src/main/res/drawable" + quality + "/" + name + extension;
     },
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
 
 export const ios = {
+    name: "ios",
     mapAssetPath: function(path) {
-        return "platforms/ios/App/assets/" + path
+        return "platforms/ios/App/App/assets/" + path
     },
     mapImagePath: function(dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name  + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
@@ -66,8 +70,9 @@ export const ios = {
 };
 
 export const node = {
+    name: "node",
     mapAssetPath: function(path) {
-        return ".work/" + path;
+        return "platforms/node/assets/" + path;
     },
     mapImagePath: function() {
         return null;

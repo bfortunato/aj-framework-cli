@@ -12,7 +12,7 @@ var pn = require("pn/fs");
 
 var utils = require("../utils");
 
-var platforms = [_platforms.android, _platforms.ios, _platforms.node];
+var platforms = [_platforms.ios, _platforms.android, _platforms.node];
 
 function buildRasterImages() {
     var sourceDir = "app/resources/images/";
@@ -30,12 +30,14 @@ function buildRasterImages() {
                         for (var i = 0; i < ratios.length; i++) {
                             (function (m) {
                                 var factor = m / 4;
-                                var dest = platform.mapImagePath(destDir, imageName, ".png", m);
-                                if (!fs.existsSync(path.dirname(dest))) {
-                                    fs.mkdirSync(path.dirname(dest));
-                                }
-
                                 if (platform.ratios.indexOf(m) != -1) {
+                                    var dest = platform.mapImagePath(destDir, imageName, ".png", m);
+                                    if (dest == null) {
+                                        return;
+                                    }
+                                    if (!fs.existsSync(path.dirname(dest))) {
+                                        fs.mkdirSync(path.dirname(dest));
+                                    }
 
                                     console.log("Resizing " + imageName + " with factor " + factor);
                                     easyimage.resize({
@@ -53,10 +55,10 @@ function buildRasterImages() {
                                     });
                                 }
                             })(ratios[i]);
+                        }
 
-                            if (platform.afterImage) {
-                                platform.afterImage(destDir, imageName, ".png");
-                            }
+                        if (platform.afterImage) {
+                            platform.afterImage(destDir, imageName, ".png");
                         }
                     });
                 });
@@ -86,6 +88,10 @@ function buildSvgImages() {
                                 platforms.forEach(function (platform) {
                                     if (platform.ratios.indexOf(m) != -1) {
                                         var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
+                                        if (dest == null) {
+                                            return;
+                                        }
+
                                         if (!fs.existsSync(path.dirname(dest))) {
                                             fs.mkdirSync(path.dirname(dest));
                                         }
@@ -112,10 +118,33 @@ function buildSvgImages() {
     });
 }
 
+var scriptsDir = "app/js/";
+
+var noCompileList = [scriptsDir + "framework/underscore.js"];
+
 function buildScripts() {
-    var scriptsDir = "app/js/";
     glob(scriptsDir + "**/*.js", function (error, files) {
         files.forEach(function (sourceFile) {
+            if (noCompileList.indexOf(sourceFile) != -1) {
+                var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
+                var scriptName = path.basename(sourceFile);
+                platforms.forEach(function (platform) {
+                    var jsDir = platform.mapAssetPath("js");
+                    var destDir = path.join(jsDir, relativeDir);
+                    var destFile = path.join(destDir, scriptName);
+                    try {
+                        fsExtra.copySync(sourceFile, destFile);
+
+                        console.log(sourceFile + " == " + destFile);
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                        process.exit(1);
+                    }
+                });
+                return;
+            }
+
             var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
             var scriptName = path.basename(sourceFile);
             babel.transformFile(sourceFile, { presets: ["babel-preset-es2015"].map(require.resolve) }, function (err, result) {

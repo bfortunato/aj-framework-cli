@@ -1,9 +1,9 @@
+#!/usr/bin/env node
 "use strict";
 
 var _commands = require("./commands");
 
 var program = require("commander");
-
 
 program.version("0.0.1");
 
@@ -16,7 +16,7 @@ program.command("build").description("Build resources and scripts for all platfo
 });
 
 program.command("watch").description("Starts a watcher for scripts").action(function () {
-    console.log("watch");
+    (0, _commands.watch)();
 });
 
 program.command("*").action(function () {

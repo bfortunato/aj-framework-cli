@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 "use strict";
 
 const program = require("commander");
@@ -24,7 +26,7 @@ program
     .command("watch")
     .description("Starts a watcher for scripts")
     .action(function() {
-        console.log("watch");
+        watch();
     });
 
 program

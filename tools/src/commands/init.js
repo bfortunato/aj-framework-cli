@@ -1,23 +1,20 @@
 "use strict";
 
-const Git = require("nodegit");
+const exec = require("child_process").exec;
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 
 module.exports = function init(path) {
     console.log("Downloading bootstrapper project...");
 
-    Git.Clone("https://github.com/bfortunato/aj-framework", path)
-        .then((repo) => {
-            console.log("Project downloaded. Initializing...");
+    exec("git clone https://github.com/bfortunato/aj-framework " + path, function() {
+        console.log("Project downloaded. Initializing...");
 
-            fs.closeSync(fs.openSync(path + "/.ajapp", 'w'));
+        fs.closeSync(fs.openSync(path + "/.ajapp", 'w'));
 
-            return fsExtra.remove(path + "/.git");
-    }).then(() => {
+        fsExtra.removeSync(path + "/.git");
+
         console.log("Done! Project created at " + path);
-    }).catch(e => {
-        console.error(e);
     });
 
 };

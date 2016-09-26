@@ -3,9 +3,12 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+var fs = require("fs");
+
 var android = exports.android = {
+    name: "android",
     mapAssetPath: function mapAssetPath(path) {
-        return "platforms/android/AJ/app/src/main/assets/" + path;
+        return "platforms/android/App/app/src/main/assets/" + path;
     },
     mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         var quality = "";
@@ -28,14 +31,15 @@ var android = exports.android = {
 
         }
 
-        return "platforms/android/AJ/app/src/main/res/drawable" + quality + "/" + name + extension;
+        return "platforms/android/App/app/src/main/res/drawable" + quality + "/" + name + extension;
     },
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
 
 var ios = exports.ios = {
+    name: "ios",
     mapAssetPath: function mapAssetPath(path) {
-        return "platforms/ios/App/assets/" + path;
+        return "platforms/ios/App/App/assets/" + path;
     },
     mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
@@ -69,8 +73,9 @@ var ios = exports.ios = {
 };
 
 var node = exports.node = {
+    name: "node",
     mapAssetPath: function mapAssetPath(path) {
-        return ".work/" + path;
+        return "platforms/node/assets/" + path;
     },
     mapImagePath: function mapImagePath() {
         return null;
