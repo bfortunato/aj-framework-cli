@@ -1,16 +1,16 @@
 "use strict";
 
-var _platforms = require("../platforms");
+const babel = require("babel-core");
+const watch = require("glob-watcher");
+const path = require("path");
+const fs = require("fs");
+const fsExtra = require("fs-extra");
 
-var babel = require("babel-core");
-var watch = require("glob-watcher");
-var path = require("path");
-var fs = require("fs");
-var fsExtra = require("fs-extra");
+const utils = require("../utils");
 
-var utils = require("../utils");
+import { android, ios, node } from "../platforms";
 
-var platforms = [_platforms.ios, _platforms.android, _platforms.node];
+var platforms = [ios, android, node];
 
 var scriptsDir = "app/js/";
 
@@ -72,4 +72,6 @@ module.exports = function watch() {
     //buildRasterImages();
     //buildSvgImages();
     watchScripts();
+
+    console.log("Looking for changes...");
 };

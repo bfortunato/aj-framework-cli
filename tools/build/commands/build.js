@@ -1,18 +1,42 @@
 "use strict";
 
-var _platforms = require("../platforms");
+const babel = require("babel-core");
+const glob = require("glob");
+const path = require("path");
+const fs = require("fs");
+const fsExtra = require("fs-extra");
+const easyimage = require("easyimage");
+const pn = require("pn/fs");
 
-var babel = require("babel-core");
-var glob = require("glob");
-var path = require("path");
-var fs = require("fs");
-var fsExtra = require("fs-extra");
-var easyimage = require("easyimage");
-var pn = require("pn/fs");
+const utils = require("../utils");
 
-var utils = require("../utils");
+import { android, ios, node } from "../platforms";
 
-var platforms = [_platforms.ios, _platforms.android, _platforms.node];
+var platforms = [ios, android, node];
+
+function buildAssets() {
+    var assetsDir = "app/assets/";
+    glob(assetsDir + "**/*", function (error, files) {
+        files.forEach(function (sourceFile) {
+            var relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
+            var fileName = path.basename(sourceFile);
+            platforms.forEach(function (platform) {
+                var platformDir = platform.mapAssetPath("");
+                var destDir = path.join(platformDir, relativeDir);
+                var destFile = path.join(destDir, fileName);
+                try {
+                    fsExtra.copySync(sourceFile, destFile);
+
+                    console.log(sourceFile + " == " + destFile);
+                } catch (error) {
+                    console.log(error.message);
+                    console.log(error.stack);
+                    process.exit(1);
+                }
+            });
+        });
+    });
+}
 
 function buildRasterImages() {
     var sourceDir = "app/resources/images/";
@@ -25,8 +49,8 @@ function buildRasterImages() {
                     var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
                     console.log("Working on " + sourcePath);
                     var imageName = path.basename(sourcePath, ext);
-                    var ratios = _platforms.android.ratios;
-                    platforms.forEach(function (platform) {
+                    var ratios = android.ratios;
+                    platforms.forEach(platform => {
                         for (var i = 0; i < ratios.length; i++) {
                             (function (m) {
                                 var factor = m / 4;
@@ -45,12 +69,10 @@ function buildRasterImages() {
                                         dst: dest,
                                         width: info.width * factor,
                                         height: info.height * factor
-                                    }).then(function () {
-                                        return console.log("Resized " + dest + " " + JSON.stringify({
-                                            width: info.width * factor,
-                                            height: info.height * factor
-                                        }));
-                                    }).catch(function (err) {
+                                    }).then(() => console.log("Resized " + dest + " " + JSON.stringify({
+                                        width: info.width * factor,
+                                        height: info.height * factor
+                                    }))).catch(err => {
                                         console.log("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + info.width * factor + ", h=" + info.height * factor + ")" + err);
                                     });
                                 }
@@ -78,14 +100,12 @@ function buildSvgImages() {
                     var ext = path.extname(sourcePath).toLowerCase();
                     var relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
                     var imageName = path.basename(sourcePath, ext);
-                    var ratios = _platforms.android.ratios;
+                    var ratios = android.ratios;
                     for (var i = 0; i < ratios.length; i++) {
                         (function (m) {
                             var factor = m;
-                            pn.readFile(sourcePath).then(function (buffer) {
-                                return svg2png(buffer, { width: parseInt(info.width * factor), height: parseInt(info.height * factor) });
-                            }).then(function (buffer) {
-                                platforms.forEach(function (platform) {
+                            pn.readFile(sourcePath).then(buffer => svg2png(buffer, { width: parseInt(info.width * factor), height: parseInt(info.height * factor) })).then(buffer => {
+                                platforms.forEach(platform => {
                                     if (platform.ratios.indexOf(m) != -1) {
                                         var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
                                         if (dest == null) {
@@ -107,7 +127,7 @@ function buildSvgImages() {
                                         platform.afterImage(relativeDir, imageName, ".png");
                                     }
                                 });
-                            }).catch(function (e) {
+                            }).catch(e => {
                                 console.log(e.message);console.error(e.stack);
                             });
                         })(ratios[i]);
@@ -120,7 +140,7 @@ function buildSvgImages() {
 
 var scriptsDir = "app/js/";
 
-var noCompileList = [scriptsDir + "framework/underscore.js"];
+var noCompileList = [scriptsDir + "framework/underscore.js", scriptsDir + "framework/moment.js", scriptsDir + "framework/polyfill.js"];
 
 function buildScripts() {
     glob(scriptsDir + "**/*.js", function (error, files) {
@@ -180,6 +200,7 @@ module.exports = function build() {
         return;
     }
 
+    buildAssets();
     buildRasterImages();
     //buildSvgImages();
     buildScripts();

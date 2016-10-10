@@ -80,5 +80,7 @@ module.exports = function watch() {
 
     //buildRasterImages();
     //buildSvgImages();
-    watchScripts()
+    watchScripts();
+
+    console.log("Looking for changes...");
 };

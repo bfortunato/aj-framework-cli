@@ -1,16 +1,13 @@
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-var fs = require("fs");
+const fs = require("fs");
 
-var android = exports.android = {
+export const android = {
     name: "android",
-    mapAssetPath: function mapAssetPath(path) {
+    mapAssetPath: function (path) {
         return "platforms/android/App/app/src/main/assets/" + path;
     },
-    mapImagePath: function mapImagePath(dir, name, extension, ratio) {
+    mapImagePath: function (dir, name, extension, ratio) {
         var quality = "";
         switch (ratio) {
             case 1:
@@ -36,15 +33,15 @@ var android = exports.android = {
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
 
-var ios = exports.ios = {
+export const ios = {
     name: "ios",
-    mapAssetPath: function mapAssetPath(path) {
+    mapAssetPath: function (path) {
         return "platforms/ios/App/App/assets/" + path;
     },
-    mapImagePath: function mapImagePath(dir, name, extension, ratio) {
+    mapImagePath: function (dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
     },
-    afterImage: function afterImage(dir, name, extension) {
+    afterImage: function (dir, name, extension) {
         var contents = {
             "images": [],
             "info": {
@@ -53,7 +50,7 @@ var ios = exports.ios = {
             }
         };
 
-        ios.ratios.forEach(function (r) {
+        ios.ratios.forEach(r => {
             contents.images.push({
                 "idiom": "universal",
                 "filename": (name + "@" + parseInt(r) + "x" + extension).replace("@1x", ""),
@@ -72,12 +69,12 @@ var ios = exports.ios = {
     ratios: [1, 2, 3]
 };
 
-var node = exports.node = {
+export const node = {
     name: "node",
-    mapAssetPath: function mapAssetPath(path) {
+    mapAssetPath: function (path) {
         return "platforms/node/assets/" + path;
     },
-    mapImagePath: function mapImagePath() {
+    mapImagePath: function () {
         return null;
     },
     ratios: [0.75, 1, 1.5, 2, 3, 4]
