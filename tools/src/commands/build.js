@@ -14,6 +14,31 @@ import { android, ios, node } from "../platforms"
 
 var platforms = [ios, android, node];
 
+function buildAssets() {
+    var assetsDir = "app/assets/";
+    glob(assetsDir + "**/*", function(error, files) {
+        files.forEach(function(sourceFile) {
+            var relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
+            var fileName = path.basename(sourceFile);
+            platforms.forEach(function(platform) {
+                var platformDir = platform.mapAssetPath("");
+                var destDir = path.join(platformDir, relativeDir);
+                var destFile = path.join(destDir, fileName);
+                try {
+                    fsExtra.copySync(sourceFile, destFile);
+
+                    console.log(sourceFile + " == " + destFile);
+                } catch (error) {
+                    console.log(error.message);
+                    console.log(error.stack);
+                    process.exit(1);
+                }
+            });
+        });
+    });
+}
+
+
 function buildRasterImages() {
     var sourceDir = "app/resources/images/";
     glob(sourceDir + "**/*[.png|.jpg]", function(err, files) {
@@ -121,7 +146,9 @@ function buildSvgImages() {
 var scriptsDir = "app/js/";
 
 var noCompileList = [
-    scriptsDir + "framework/underscore.js"
+    scriptsDir + "framework/underscore.js",
+    scriptsDir + "framework/moment.js",
+    scriptsDir + "framework/polyfill.js"
 ];
 
 function buildScripts() {
@@ -182,6 +209,7 @@ module.exports = function build() {
         return;
     }
 
+    buildAssets();
     buildRasterImages();
     //buildSvgImages();
     buildScripts();
