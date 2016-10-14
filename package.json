@@ -1,7 +1,7 @@
 {
   "private": false,
   "name": "aj-framework-cli",
-  "version": "0.0.1",
+  "version": "1.0",
   "description": "AJ: a framework to develop hybrid mobile and web applications",
   "main": "tools/build/aj.js",
   "bin": {
