@@ -55,7 +55,7 @@ function transpile(sourceFile) {
                 }
             });
 
-            log(sourceFile + " compiled!");
+            log("[COMPILED] " + sourceFile);
         }
     });
 }
