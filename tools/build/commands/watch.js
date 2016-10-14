@@ -1,16 +1,16 @@
 "use strict";
 
-const babel = require("babel-core");
-const watch = require("glob-watcher");
-const path = require("path");
-const fs = require("fs");
-const fsExtra = require("fs-extra");
+var _platforms = require("../platforms");
 
-const utils = require("../utils");
+var babel = require("babel-core");
+var watch = require("glob-watcher");
+var path = require("path");
+var fs = require("fs");
+var fsExtra = require("fs-extra");
 
-import { android, ios, node } from "../platforms";
+var utils = require("../utils");
 
-var platforms = [ios, android, node];
+var platforms = [_platforms.ios, _platforms.android, _platforms.node];
 
 var scriptsDir = "app/js/";
 

@@ -63,7 +63,7 @@ export const ios = {
                 return console.log(err);
             }
 
-            console.log("Written Contents.json for " + name);
+            console.log("[CREATED] Contents.json for " + name);
         });
     },
     ratios: [1, 2, 3]

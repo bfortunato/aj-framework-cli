@@ -1,8 +1,8 @@
 "use strict";
 
-const exec = require("child_process").exec;
-const fs = require("fs");
-const fsExtra = require("fs-extra");
+var exec = require("child_process").exec;
+var fs = require("fs");
+var fsExtra = require("fs-extra");
 
 module.exports = function init(path) {
     console.log("Downloading bootstrapper project...");

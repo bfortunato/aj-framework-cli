@@ -1,13 +1,16 @@
 "use strict";
 
-const fs = require("fs");
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var fs = require("fs");
 
-export const android = {
+var android = exports.android = {
     name: "android",
-    mapAssetPath: function (path) {
+    mapAssetPath: function mapAssetPath(path) {
         return "platforms/android/App/app/src/main/assets/" + path;
     },
-    mapImagePath: function (dir, name, extension, ratio) {
+    mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         var quality = "";
         switch (ratio) {
             case 1:
@@ -33,15 +36,15 @@ export const android = {
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
 
-export const ios = {
+var ios = exports.ios = {
     name: "ios",
-    mapAssetPath: function (path) {
+    mapAssetPath: function mapAssetPath(path) {
         return "platforms/ios/App/App/assets/" + path;
     },
-    mapImagePath: function (dir, name, extension, ratio) {
+    mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
     },
-    afterImage: function (dir, name, extension) {
+    afterImage: function afterImage(dir, name, extension) {
         var contents = {
             "images": [],
             "info": {
@@ -50,7 +53,7 @@ export const ios = {
             }
         };
 
-        ios.ratios.forEach(r => {
+        ios.ratios.forEach(function (r) {
             contents.images.push({
                 "idiom": "universal",
                 "filename": (name + "@" + parseInt(r) + "x" + extension).replace("@1x", ""),
@@ -63,18 +66,18 @@ export const ios = {
                 return console.log(err);
             }
 
-            console.log("Written Contents.json for " + name);
+            console.log("[CREATED] Contents.json for " + name);
         });
     },
     ratios: [1, 2, 3]
 };
 
-export const node = {
+var node = exports.node = {
     name: "node",
-    mapAssetPath: function (path) {
+    mapAssetPath: function mapAssetPath(path) {
         return "platforms/node/assets/" + path;
     },
-    mapImagePath: function () {
+    mapImagePath: function mapImagePath() {
         return null;
     },
     ratios: [0.75, 1, 1.5, 2, 3, 4]

@@ -1,18 +1,18 @@
 "use strict";
 
-const babel = require("babel-core");
-const glob = require("glob");
-const path = require("path");
-const fs = require("fs");
-const fsExtra = require("fs-extra");
-const easyimage = require("easyimage");
-const pn = require("pn/fs");
+var _platforms = require("../platforms");
 
-const utils = require("../utils");
+var babel = require("babel-core");
+var glob = require("glob");
+var path = require("path");
+var fs = require("fs");
+var fsExtra = require("fs-extra");
+var easyimage = require("easyimage");
+var pn = require("pn/fs");
 
-import { android, ios, node } from "../platforms";
+var utils = require("../utils");
 
-var platforms = [ios, android, node];
+var platforms = [_platforms.ios, _platforms.android, _platforms.node];
 
 function buildAssets() {
     var assetsDir = "app/assets/";
@@ -47,10 +47,9 @@ function buildRasterImages() {
                 easyimage.info(sourcePath).then(function (info) {
                     var ext = path.extname(sourcePath).toLowerCase();
                     var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    console.log("Working on " + sourcePath);
                     var imageName = path.basename(sourcePath, ext);
-                    var ratios = android.ratios;
-                    platforms.forEach(platform => {
+                    var ratios = _platforms.android.ratios;
+                    platforms.forEach(function (platform) {
                         for (var i = 0; i < ratios.length; i++) {
                             (function (m) {
                                 var factor = m / 4;
@@ -62,17 +61,17 @@ function buildRasterImages() {
                                     if (!fs.existsSync(path.dirname(dest))) {
                                         fs.mkdirSync(path.dirname(dest));
                                     }
-
-                                    console.log("Resizing " + imageName + " with factor " + factor);
                                     easyimage.resize({
                                         src: sourcePath,
                                         dst: dest,
                                         width: info.width * factor,
                                         height: info.height * factor
-                                    }).then(() => console.log("Resized " + dest + " " + JSON.stringify({
-                                        width: info.width * factor,
-                                        height: info.height * factor
-                                    }))).catch(err => {
+                                    }).then(function () {
+                                        return console.log("[SCALED] " + dest + " " + JSON.stringify({
+                                            width: info.width * factor,
+                                            height: info.height * factor
+                                        }));
+                                    }).catch(function (err) {
                                         console.log("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + info.width * factor + ", h=" + info.height * factor + ")" + err);
                                     });
                                 }
@@ -100,12 +99,14 @@ function buildSvgImages() {
                     var ext = path.extname(sourcePath).toLowerCase();
                     var relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
                     var imageName = path.basename(sourcePath, ext);
-                    var ratios = android.ratios;
+                    var ratios = _platforms.android.ratios;
                     for (var i = 0; i < ratios.length; i++) {
                         (function (m) {
                             var factor = m;
-                            pn.readFile(sourcePath).then(buffer => svg2png(buffer, { width: parseInt(info.width * factor), height: parseInt(info.height * factor) })).then(buffer => {
-                                platforms.forEach(platform => {
+                            pn.readFile(sourcePath).then(function (buffer) {
+                                return svg2png(buffer, { width: parseInt(info.width * factor), height: parseInt(info.height * factor) });
+                            }).then(function (buffer) {
+                                platforms.forEach(function (platform) {
                                     if (platform.ratios.indexOf(m) != -1) {
                                         var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
                                         if (dest == null) {
@@ -127,7 +128,7 @@ function buildSvgImages() {
                                         platform.afterImage(relativeDir, imageName, ".png");
                                     }
                                 });
-                            }).catch(e => {
+                            }).catch(function (e) {
                                 console.log(e.message);console.error(e.stack);
                             });
                         })(ratios[i]);
@@ -139,13 +140,11 @@ function buildSvgImages() {
 }
 
 var scriptsDir = "app/js/";
-
-var noCompileList = [scriptsDir + "framework/underscore.js", scriptsDir + "framework/moment.js", scriptsDir + "framework/polyfill.js"];
-
+var libsDir = "app/js/libs/";
 function buildScripts() {
     glob(scriptsDir + "**/*.js", function (error, files) {
         files.forEach(function (sourceFile) {
-            if (noCompileList.indexOf(sourceFile) != -1) {
+            if (sourceFile.indexOf(libsDir) != -1) {
                 var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
                 var scriptName = path.basename(sourceFile);
                 platforms.forEach(function (platform) {
@@ -155,7 +154,7 @@ function buildScripts() {
                     try {
                         fsExtra.copySync(sourceFile, destFile);
 
-                        console.log(sourceFile + " == " + destFile);
+                        console.log("[COPIED] " + sourceFile + " == " + destFile);
                     } catch (error) {
                         console.log(error.message);
                         console.log(error.stack);
@@ -181,7 +180,7 @@ function buildScripts() {
                             fsExtra.mkdirpSync(destDir);
                             fs.writeFileSync(destFile, result.code);
 
-                            console.log(sourceFile + " => " + destFile);
+                            console.log("[COMPILED] " + sourceFile + " => " + destFile);
                         } catch (error) {
                             console.log(error.message);
                             console.log(error.stack);

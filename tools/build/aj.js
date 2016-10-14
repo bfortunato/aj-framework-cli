@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 "use strict";
 
-const program = require("commander");
-import { init, build, watch } from "./commands";
+var _commands = require("./commands");
+
+var program = require("commander");
 
 program.version("0.0.1");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
-    init(path);
+    (0, _commands.init)(path);
 });
 
 program.command("build").description("Build resources and scripts for all platforms").action(function () {
-    build();
+    (0, _commands.build)();
 });
 
 program.command("watch").description("Starts a watcher for scripts").action(function () {
-    watch();
+    (0, _commands.watch)();
 });
 
 program.command("*").action(function () {

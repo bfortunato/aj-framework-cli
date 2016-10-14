@@ -47,7 +47,6 @@ function buildRasterImages() {
                 easyimage.info(sourcePath).then(function (info) {
                     var ext = path.extname(sourcePath).toLowerCase();
                     var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    console.log("Working on " + sourcePath);
                     var imageName = path.basename(sourcePath, ext);
                     var ratios = android.ratios;
                     platforms.forEach(platform => {
@@ -62,15 +61,13 @@ function buildRasterImages() {
                                     if (!fs.existsSync(path.dirname(dest))) {
                                         fs.mkdirSync(path.dirname(dest));
                                     }
-
-                                    console.log("Resizing " + imageName + " with factor " + factor);
                                     easyimage.resize({
                                             src: sourcePath,
                                             dst: dest,
                                             width: info.width * factor,
                                             height: info.height * factor
                                         })
-                                        .then(() => console.log("Resized " + dest + " " + JSON.stringify({
+                                        .then(() => console.log("[SCALED] " + dest + " " + JSON.stringify({
                                                 width: info.width * factor,
                                                 height: info.height * factor
                                             })))
@@ -144,17 +141,11 @@ function buildSvgImages() {
 }
 
 var scriptsDir = "app/js/";
-
-var noCompileList = [
-    scriptsDir + "framework/underscore.js",
-    scriptsDir + "framework/moment.js",
-    scriptsDir + "framework/polyfill.js"
-];
-
+var libsDir = "app/js/libs/";
 function buildScripts() {
     glob(scriptsDir + "**/*.js", function(error, files) {
         files.forEach(function(sourceFile) {
-            if (noCompileList.indexOf(sourceFile) != -1) {
+            if (sourceFile.indexOf(libsDir) != -1) {
                 var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
                 var scriptName = path.basename(sourceFile);
                 platforms.forEach(function(platform) {
@@ -164,7 +155,7 @@ function buildScripts() {
                     try {
                         fsExtra.copySync(sourceFile, destFile);
 
-                        console.log(sourceFile + " == " + destFile);
+                        console.log("[COPIED] " + sourceFile + " == " + destFile);
                     } catch (error) {
                         console.log(error.message);
                         console.log(error.stack);
@@ -190,7 +181,7 @@ function buildScripts() {
                             fsExtra.mkdirpSync(destDir);
                             fs.writeFileSync(destFile, result.code);
 
-                            console.log(sourceFile + " => " + destFile);
+                            console.log("[COMPILED] " + sourceFile + " => " + destFile);
                         } catch (error) {
                             console.log(error.message);
                             console.log(error.stack);
