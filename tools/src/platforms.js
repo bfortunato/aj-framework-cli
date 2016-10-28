@@ -79,3 +79,15 @@ export const node = {
     },
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
+
+export const web = {
+    name: "web",
+    combineScripts: true,
+    mapAssetPath: function mapAssetPath(path) {
+        return "platforms/web/assets/" + path;
+    },
+    mapImagePath: function mapImagePath(dir, name, extension, ratio) {
+        return ("platforms/web/resources/images/" + name + extension);
+    },
+    ratios: [3]
+};

@@ -8,9 +8,8 @@ const fsExtra = require("fs-extra");
 
 const utils = require("../utils");
 
-import { android, ios, node } from "../platforms"
-
-var platforms = [ios, android, node];
+import * as PLATFORMS from "../platforms"
+import { build } from "../commands"
 
 var scriptsDir = "app/js/";
 
@@ -34,7 +33,7 @@ function log(msg) {
 
 }
 
-function transpile(sourceFile) {
+function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
     babel.transformFile(sourceFile, {presets: ["babel-preset-es2015"].map(require.resolve)}, function(err, result) {
@@ -43,15 +42,19 @@ function transpile(sourceFile) {
             console.log(err.codeFrame);
         } else {
             platforms.forEach(function(platform) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = path.join(jsDir, relativeDir);
-                var destFile = path.join(destDir, scriptName);
-                try {
-                    fsExtra.mkdirpSync(destDir);
-                    fs.writeFileSync(destFile, result.code);
-                } catch (error) {
-                    console.log(error.message);
-                    console.log(error.stack);
+                if (platform.combineScripts) {
+                    build([platform.name], ["scripts"]);
+                } else {
+                    var jsDir = platform.mapAssetPath("js");
+                    var destDir = path.join(jsDir, relativeDir);
+                    var destFile = path.join(destDir, scriptName);
+                    try {
+                        fsExtra.mkdirpSync(destDir);
+                        fs.writeFileSync(destFile, result.code);
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                    }
                 }
             });
 
@@ -60,19 +63,38 @@ function transpile(sourceFile) {
     });
 }
 
-function watchScripts() {
+function watchScripts(_platforms) {
+    let selectedPlatforms = [];
+
+    let all = !_platforms || _platforms.contains("all");
+
+    if (all) {
+        PLATFORMS.forEach(platform => selectedPlatforms.push(platform))
+    } else {
+        _platforms.forEach(pname => {
+            let platform = PLATFORMS[pname];
+            if (!platform) {
+                console.log("Unknown platform: " + pname);
+                process.exit(1);
+                return;
+            } else {
+                selectedPlatforms.push(platform);
+            }
+        })
+    }
+
     var watcher = watch(scriptsDir + "**/*.js");
 
     watcher.on("add", function(path) {
-         transpile(path);
+         transpile(path, selectedPlatforms);
     });
 
     watcher.on("change", function(path) {
-        transpile(path);
+        transpile(path, selectedPlatforms);
     });
 }
 
-module.exports = function watch() {
+module.exports = function watch(platforms) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
@@ -80,7 +102,7 @@ module.exports = function watch() {
 
     //buildRasterImages();
     //buildSvgImages();
-    watchScripts();
+    watchScripts(platforms);
 
     console.log("Looking for changes...");
 };

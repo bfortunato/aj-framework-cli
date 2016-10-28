@@ -1,6 +1,12 @@
 "use strict";
 
-var _platforms = require("../platforms");
+var _platforms2 = require("../platforms");
+
+var PLATFORMS = _interopRequireWildcard(_platforms2);
+
+var _commands = require("../commands");
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 var babel = require("babel-core");
 var watch = require("glob-watcher");
@@ -9,8 +15,6 @@ var fs = require("fs");
 var fsExtra = require("fs-extra");
 
 var utils = require("../utils");
-
-var platforms = [_platforms.ios, _platforms.android, _platforms.node];
 
 var scriptsDir = "app/js/";
 
@@ -25,7 +29,7 @@ function log(msg) {
     console.log('[' + (hour < 10 ? '0' + hour : hour) + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds) + '.' + ('00' + milliseconds).slice(-3) + '] ' + msg);
 }
 
-function transpile(sourceFile) {
+function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
     babel.transformFile(sourceFile, { presets: ["babel-preset-es2015"].map(require.resolve) }, function (err, result) {
@@ -34,15 +38,19 @@ function transpile(sourceFile) {
             console.log(err.codeFrame);
         } else {
             platforms.forEach(function (platform) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = path.join(jsDir, relativeDir);
-                var destFile = path.join(destDir, scriptName);
-                try {
-                    fsExtra.mkdirpSync(destDir);
-                    fs.writeFileSync(destFile, result.code);
-                } catch (error) {
-                    console.log(error.message);
-                    console.log(error.stack);
+                if (platform.combineScripts) {
+                    (0, _commands.build)([platform.name], ["scripts"]);
+                } else {
+                    var jsDir = platform.mapAssetPath("js");
+                    var destDir = path.join(jsDir, relativeDir);
+                    var destFile = path.join(destDir, scriptName);
+                    try {
+                        fsExtra.mkdirpSync(destDir);
+                        fs.writeFileSync(destFile, result.code);
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                    }
                 }
             });
 
@@ -51,19 +59,40 @@ function transpile(sourceFile) {
     });
 }
 
-function watchScripts() {
+function watchScripts(_platforms) {
+    var selectedPlatforms = [];
+
+    var all = !_platforms || _platforms.contains("all");
+
+    if (all) {
+        PLATFORMS.forEach(function (platform) {
+            return selectedPlatforms.push(platform);
+        });
+    } else {
+        _platforms.forEach(function (pname) {
+            var platform = PLATFORMS[pname];
+            if (!platform) {
+                console.log("Unknown platform: " + pname);
+                process.exit(1);
+                return;
+            } else {
+                selectedPlatforms.push(platform);
+            }
+        });
+    }
+
     var watcher = watch(scriptsDir + "**/*.js");
 
     watcher.on("add", function (path) {
-        transpile(path);
+        transpile(path, selectedPlatforms);
     });
 
     watcher.on("change", function (path) {
-        transpile(path);
+        transpile(path, selectedPlatforms);
     });
 }
 
-module.exports = function watch() {
+module.exports = function watch(platforms) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
@@ -71,7 +100,7 @@ module.exports = function watch() {
 
     //buildRasterImages();
     //buildSvgImages();
-    watchScripts();
+    watchScripts(platforms);
 
     console.log("Looking for changes...");
 };
