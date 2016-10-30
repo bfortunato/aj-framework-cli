@@ -164,6 +164,7 @@ function buildScripts(platforms) {
             if (sourceFile.indexOf(libsDir) != -1) {
                 var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
                 var scriptName = path.basename(sourceFile);
+                var moduleName = path.join(relativeDir, scriptName);
                 platforms.forEach(function (platform) {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
@@ -173,10 +174,10 @@ function buildScripts(platforms) {
                             var source = fs.readFileSync(sourceFile);
 
                             platform.combined.push({
-                                module: relativeDir,
+                                module: moduleName,
                                 source: source
                             });
-                            console.log("[COMBINELIB] " + sourceFile + " == " + destFile);
+                            console.log("[COMBINELIB] " + moduleName);
                         } else {
                             fsExtra.copySync(sourceFile, destFile);
                             console.log("[COPIED] " + sourceFile + " == " + destFile);
@@ -192,6 +193,7 @@ function buildScripts(platforms) {
 
             var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
             var scriptName = path.basename(sourceFile);
+            var moduleName = path.join(relativeDir, scriptName);
             var result = babel.transformFileSync(sourceFile, { presets: ["babel-preset-es2015"].map(require.resolve) });
 
             platforms.forEach(function (platform) {
@@ -201,11 +203,11 @@ function buildScripts(platforms) {
                 try {
                     if (platform.combineScripts) {
                         platform.combined.push({
-                            module: relativeDir,
+                            module: moduleName,
                             source: result.code
                         });
 
-                        console.log("[COMBINED] " + sourceFile + " => " + destFile);
+                        console.log("[COMBINED] " + moduleName);
                     } else {
                         fsExtra.mkdirpSync(destDir);
                         fs.writeFileSync(destFile, result.code);
@@ -229,7 +231,7 @@ function buildScripts(platforms) {
                 var code = "";
 
                 platform.combined.forEach(function (c) {
-                    code += "define(' " + c.module + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
+                    code += "define('" + c.module + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
                 });
 
                 fsExtra.mkdirpSync(destDir);

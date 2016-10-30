@@ -92,5 +92,5 @@ var web = exports.web = {
     mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         return "platforms/web/resources/images/" + name + extension;
     },
-    ratios: [3]
+    ratios: [1]
 };

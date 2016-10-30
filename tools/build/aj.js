@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+
+
 "use strict";
 
 var _commands = require("./commands");
 
 var program = require("commander");
+
 
 function list(val) {
     return val.split(',');
