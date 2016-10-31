@@ -16,6 +16,11 @@ var pn = require("pn/fs");
 
 var utils = require("../utils");
 
+var ALL_PLATFORMS = [];
+for (var k in PLATFORMS) {
+    ALL_PLATFORMS.push(PLATFORMS[k]);
+}
+
 Array.prototype.contains = function (el) {
     return this.indexOf(el) != -1;
 };
@@ -234,6 +239,8 @@ function buildScripts(platforms) {
                     code += "define('" + c.module + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
                 });
 
+                code += "\nrequire('./aj').createRuntime();";
+
                 fsExtra.mkdirpSync(destDir);
                 fs.writeFileSync(destFile, code);
 
@@ -254,7 +261,7 @@ module.exports = function build(_platforms, types) {
     var all = !_platforms || _platforms.contains("all");
 
     if (all) {
-        PLATFORMS.forEach(function (platform) {
+        ALL_PLATFORMS.forEach(function (platform) {
             return selectedPlatforms.push(platform);
         });
     } else {

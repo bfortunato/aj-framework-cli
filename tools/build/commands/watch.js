@@ -16,6 +16,12 @@ var fsExtra = require("fs-extra");
 
 var utils = require("../utils");
 
+var ALL_PLATFORMS = [];
+for (var k in PLATFORMS) {
+    ALL_PLATFORMS.push(PLATFORMS[k]);
+}
+
+
 var scriptsDir = "app/js/";
 
 function log(msg) {
@@ -65,7 +71,7 @@ function watchScripts(_platforms) {
     var all = !_platforms || _platforms.contains("all");
 
     if (all) {
-        PLATFORMS.forEach(function (platform) {
+        ALL_PLATFORMS.forEach(function (platform) {
             return selectedPlatforms.push(platform);
         });
     } else {

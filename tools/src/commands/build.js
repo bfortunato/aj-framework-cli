@@ -11,6 +11,10 @@ const pn = require("pn/fs");
 const utils = require("../utils");
 
 import * as PLATFORMS from "../platforms"
+const ALL_PLATFORMS = [];
+for (var k in PLATFORMS) {
+    ALL_PLATFORMS.push(PLATFORMS[k]);
+}
 
 Array.prototype.contains = function(el) {
     return this.indexOf(el) != -1;
@@ -234,6 +238,8 @@ function buildScripts(platforms) {
                             "});\n")
                 });
 
+                code += "\nrequire('./aj').createRuntime();";
+
                 fsExtra.mkdirpSync(destDir);
                 fs.writeFileSync(destFile, code);
 
@@ -254,7 +260,7 @@ module.exports = function build(_platforms, types) {
     let all = !_platforms || _platforms.contains("all");
 
     if (all) {
-        PLATFORMS.forEach(platform => selectedPlatforms.push(platform))
+        ALL_PLATFORMS.forEach(platform => selectedPlatforms.push(platform))
     } else {
         _platforms.forEach(pname => {
             let platform = PLATFORMS[pname];

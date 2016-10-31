@@ -9,6 +9,10 @@ const fsExtra = require("fs-extra");
 const utils = require("../utils");
 
 import * as PLATFORMS from "../platforms"
+const ALL_PLATFORMS = [];
+for (var k in PLATFORMS) {
+    ALL_PLATFORMS.push(PLATFORMS[k]);
+}
 import { build } from "../commands"
 
 var scriptsDir = "app/js/";
@@ -69,7 +73,7 @@ function watchScripts(_platforms) {
     let all = !_platforms || _platforms.contains("all");
 
     if (all) {
-        PLATFORMS.forEach(platform => selectedPlatforms.push(platform))
+        ALL_PLATFORMS.forEach(platform => selectedPlatforms.push(platform))
     } else {
         _platforms.forEach(pname => {
             let platform = PLATFORMS[pname];
