@@ -12,7 +12,7 @@ function list(val) {
     return val.split(',');
 }
 
-program.version("0.0.1");
+program.version("1.0.0");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
     (0, _commands.init)(path);
