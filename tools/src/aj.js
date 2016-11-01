@@ -10,7 +10,7 @@ function list(val) {
 }
 
 program
-    .version("1.0.1")
+    .version("1.0.2")
 
 program
     .command("init <path>")
@@ -22,7 +22,7 @@ program
 program
     .command("build")
     .option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list)
-    .option("-t, --types <types>", "The types you want to build (all, scripts, images), default all", list)
+    .option("-t, --types <types>", "The types you want to build (all, scripts, images, app_icon), default all", list)
     .description("Build resources and scripts for all platforms")
     .action(function(options) {
         build(options.platforms, options.types);

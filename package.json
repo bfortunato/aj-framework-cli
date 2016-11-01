@@ -1,14 +1,11 @@
 {
   "private": false,
   "name": "aj-framework-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AJ: a framework to develop hybrid mobile and web applications",
   "main": "tools/build/aj.js",
   "bin": {
     "aj": "tools/build/aj.js"
-  },
-  "scripts": {
-    "test": "test"
   },
   "author": "Bruno Fortunato (Applica)",
   "license": "ISC",
@@ -16,13 +13,12 @@
     "babel-core": "^6.14.0",
     "babel-preset-es2015": "^6.14.0",
     "commander": "^2.9.0",
-    "easyimage": "^2.1.0",
     "fs-extra": "^0.30.0",
     "glob": "^7.1.0",
     "glob-watcher": "^3.0.0",
     "path": "^0.12.7",
     "pn": "^1.0.0",
-    "svg2png": "^4.0.0"
+    "sharp": "^0.16.2"
   },
   "devDependencies": {
     "babel-cli": "^6.14.0"

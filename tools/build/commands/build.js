@@ -1,5 +1,7 @@
 "use strict";
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var _platforms2 = require("../platforms");
 
 var PLATFORMS = _interopRequireWildcard(_platforms2);
@@ -11,8 +13,8 @@ var glob = require("glob");
 var path = require("path");
 var fs = require("fs");
 var fsExtra = require("fs-extra");
-var easyimage = require("easyimage");
 var pn = require("pn/fs");
+var sharp = require("sharp");
 
 var utils = require("../utils");
 
@@ -54,51 +56,77 @@ function buildRasterImages(platforms) {
     glob(sourceDir + "**/*[.png|.jpg]", function (err, files) {
         files.forEach(function (sourcePath) {
             if (sourcePath.indexOf("@") == -1) {
-                //already converted
-                easyimage.info(sourcePath).then(function (info) {
-                    try {
-                        var ext = path.extname(sourcePath).toLowerCase();
-                        var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                        var imageName = path.basename(sourcePath, ext);
-                        var ratios = PLATFORMS.android.ratios;
-                        platforms.forEach(function (platform) {
-                            for (var i = 0; i < ratios.length; i++) {
-                                (function (m) {
-                                    var factor = m / 4;
-                                    if (platform.ratios.indexOf(m) != -1) {
-                                        var dest = platform.mapImagePath(destDir, imageName, ".png", m);
-                                        if (dest == null) {
-                                            return;
-                                        }
-                                        if (!fs.existsSync(path.dirname(dest))) {
-                                            fsExtra.mkdirpSync(path.dirname(dest));
-                                        }
-                                        easyimage.resize({
-                                            src: sourcePath,
-                                            dst: dest,
-                                            width: info.width * factor,
-                                            height: info.height * factor
-                                        }).then(function () {
-                                            return console.log("[SCALED] " + dest + " " + JSON.stringify({
-                                                width: info.width * factor,
-                                                height: info.height * factor
-                                            }));
-                                        }).catch(function (err) {
-                                            console.log("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + info.width * factor + ", h=" + info.height * factor + ")" + err);
-                                        });
-                                    }
-                                })(ratios[i]);
-                            }
+                (function () {
+                    //already converted
+                    var ext = path.extname(sourcePath).toLowerCase();
+                    var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
+                    var imageName = path.basename(sourcePath, ext);
+                    var ratios = PLATFORMS.android.ratios;
+                    var callbackCounter = 0;
 
-                            if (platform.afterImage) {
-                                platform.afterImage(destDir, imageName, ".png");
-                            }
-                        });
-                    } catch (e) {
-                        console.error(e);
-                        console.error(e.stack);
-                    }
-                });
+                    sharp(sourcePath).metadata().then(function (metadata) {
+                        try {
+                            (function () {
+                                var originalWidth = metadata.width;
+                                var originalHeight = metadata.height;
+
+                                platforms.forEach(function (platform) {
+                                    for (var i = 0; i < ratios.length; i++) {
+                                        (function (m) {
+                                            var factor = m / 4;
+
+                                            if (platform.ratios.indexOf(m) != -1) {
+                                                var dest;
+
+                                                var _ret3 = function () {
+                                                    dest = platform.mapImagePath(destDir, imageName, ".png", m);
+
+                                                    if (dest == null) {
+                                                        return {
+                                                            v: void 0
+                                                        };
+                                                    }
+                                                    if (!fs.existsSync(path.dirname(dest))) {
+                                                        fsExtra.mkdirpSync(path.dirname(dest));
+                                                    }
+
+                                                    var width = parseInt(originalWidth * factor);
+                                                    var height = parseInt(originalHeight * factor);
+
+                                                    callbackCounter++;
+                                                    sharp(sourcePath).resize(width, height).toFile(dest, function (err) {
+                                                        if (err) {
+                                                            console.error("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + width + ", h=" + height + ")" + err);
+                                                        } else {
+                                                            console.log("[SCALED] " + dest + " " + JSON.stringify({
+                                                                width: width,
+                                                                height: height
+                                                            }));
+                                                        }
+
+                                                        callbackCounter--;
+
+                                                        //at the end of all operations
+                                                        if (callbackCounter == 0) {
+                                                            if (platform.afterImage) {
+                                                                platform.afterImage(destDir, imageName, ".png");
+                                                            }
+                                                        }
+                                                    });
+                                                }();
+
+                                                if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
+                                            }
+                                        })(ratios[i]);
+                                    }
+                                });
+                            })();
+                        } catch (e) {
+                            console.error(e);
+                            console.error(e.stack);
+                        }
+                    });
+                })();
             }
         });
     });
@@ -250,6 +278,28 @@ function buildScripts(platforms) {
     });
 };
 
+function buildAppIcon(platforms) {
+    var appIcon = "app/resources/app_icon.png";
+    if (!fs.existsSync(appIcon)) {
+        console.warn("[WARNING] appIcon not found on " + appIcon);
+        return;
+    }
+
+    sharp(appIcon).metadata().then(function (metadata) {
+        if (metadata.width != 1024 || metadata.height != 1024) {
+            throw new Error("app_icon size must be 1024x1024");
+        }
+
+        platforms.forEach(function (p) {
+            if (p.generateAppIcon) {
+                p.generateAppIcon(appIcon);
+            }
+        });
+    }).catch(function (err) {
+        console.error(err);
+    });
+}
+
 module.exports = function build(_platforms, types) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
@@ -281,6 +331,10 @@ module.exports = function build(_platforms, types) {
 
     all = types.contains("all");
 
+    if (all || types.contains("scripts")) {
+        buildScripts(selectedPlatforms);
+    }
+
     if (all || types.contains("assets")) {
         buildAssets(selectedPlatforms);
     }
@@ -288,9 +342,8 @@ module.exports = function build(_platforms, types) {
     if (all || types.contains("images")) {
         buildRasterImages(selectedPlatforms);
     }
-    //buildSvgImages();
 
-    if (all || types.contains("scripts")) {
-        buildScripts(selectedPlatforms);
+    if (all || types.contains("app_icon")) {
+        buildAppIcon(selectedPlatforms);
     }
 };
