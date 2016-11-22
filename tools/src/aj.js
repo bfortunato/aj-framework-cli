@@ -10,7 +10,7 @@ function list(val) {
 }
 
 program
-    .version("1.0.2")
+    .version("1.0.4")
 
 program
     .command("init <path>")
