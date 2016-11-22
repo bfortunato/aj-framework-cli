@@ -268,6 +268,7 @@ function buildScripts(platforms) {
                 });
 
                 code += "\nrequire('./aj').createRuntime();";
+                code += "\nrequire('./main').main();";
 
                 fsExtra.mkdirpSync(destDir);
                 fs.writeFileSync(destFile, code);
