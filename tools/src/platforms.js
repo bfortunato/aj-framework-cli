@@ -354,5 +354,5 @@ export const web = {
             })
 
     },
-    ratios: [1]
+    ratios: [2]
 };

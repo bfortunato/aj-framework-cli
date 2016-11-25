@@ -40,7 +40,7 @@ function log(msg) {
 function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
-    babel.transformFile(sourceFile, {presets: ["babel-preset-es2015"].map(require.resolve)}, function(err, result) {
+    babel.transformFile(sourceFile, {presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve)}, function(err, result) {
         if (err) {
             console.log(err.message);
             console.log(err.codeFrame);
@@ -52,6 +52,7 @@ function transpile(sourceFile, platforms) {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
                     var destFile = path.join(destDir, scriptName);
+                    destFile = destFile.replace(".jsx", ".js");
                     try {
                         fsExtra.mkdirpSync(destDir);
                         fs.writeFileSync(destFile, result.code);
@@ -87,7 +88,7 @@ function watchScripts(_platforms) {
         })
     }
 
-    var watcher = watch(scriptsDir + "**/*.js");
+    var watcher = watch(scriptsDir + "**/*.{js,jsx}");
 
     watcher.on("add", function(path) {
          transpile(path, selectedPlatforms);

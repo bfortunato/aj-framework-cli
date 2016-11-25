@@ -9,6 +9,7 @@ const pn = require("pn/fs");
 const sharp = require("sharp");
 
 const utils = require("../utils");
+const uglifyjs = require("uglifyjs")
 
 import * as PLATFORMS from "../platforms"
 const ALL_PLATFORMS = [];
@@ -169,14 +170,14 @@ function buildSvgImages(platforms) {
 
 var scriptsDir = "app/js/";
 var libsDir = "app/js/libs/";
-function buildScripts(platforms) {
+function buildScripts(platforms, production) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
             platform.combined = [];
         }
     });
 
-    glob(scriptsDir + "**/*.js", function (error, files) {
+    glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
         files.forEach(function (sourceFile) {
             if (sourceFile.indexOf(libsDir) != -1) {
                 var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
@@ -211,12 +212,14 @@ function buildScripts(platforms) {
             var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
             var scriptName = path.basename(sourceFile);
             var moduleName = path.join(relativeDir, scriptName);
-            var result = babel.transformFileSync(sourceFile, {presets: ["babel-preset-es2015"].map(require.resolve)});
+            moduleName = moduleName.replace(".jsx", ".js");
+            var result = babel.transformFileSync(sourceFile, {presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve)});
 
             platforms.forEach(function (platform) {
                 var jsDir = platform.mapAssetPath("js");
                 var destDir = path.join(jsDir, relativeDir);
                 var destFile = path.join(destDir, scriptName);
+                destFile = destFile.replace(".jsx", ".js");
                 try {
                     if (platform.combineScripts) {
                         platform.combined.push({
@@ -227,9 +230,17 @@ function buildScripts(platforms) {
                         console.log("[COMBINED] " + moduleName);
                     } else {
                         fsExtra.mkdirpSync(destDir);
-                        fs.writeFileSync(destFile, result.code);
 
-                        console.log("[COMPILED] " + sourceFile + " => " + destFile);
+                        if (production) {
+                            let uglified = uglifyjs.minify(result.code, {fromString: true})
+
+                            fs.writeFileSync(destFile, uglified.code);
+
+                            console.log("[COMPILED.MIN] " + sourceFile + " == " + destFile);
+                        } else {
+                            fs.writeFileSync(destFile, result.code);
+                            console.log("[COMPILED] " + sourceFile + " => " + destFile);
+                        }
                     }
                 } catch (error) {
                     console.log(error.message);
@@ -257,9 +268,17 @@ function buildScripts(platforms) {
                 code += "\nrequire('./main').main();"
 
                 fsExtra.mkdirpSync(destDir);
-                fs.writeFileSync(destFile, code);
 
-                console.log("[WRITTEN] " + destFile);
+                if (production) {
+                    let result = uglifyjs.minify(code, {fromString: true})
+                    fs.writeFileSync(destFile, result.code);
+
+                    console.log("[WRITTEN.MIN] " + destFile);
+                } else {
+                    fs.writeFileSync(destFile, code);
+
+                    console.log("[WRITTEN] " + destFile);
+                }
             }
         });
     });
@@ -289,7 +308,7 @@ function buildAppIcon(platforms) {
         })
 }
 
-module.exports = function build(_platforms, types) {
+module.exports = function build(_platforms, types, production) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
@@ -319,7 +338,7 @@ module.exports = function build(_platforms, types) {
     all = types.contains("all");
 
     if (all || types.contains("scripts")) {
-        buildScripts(selectedPlatforms);
+        buildScripts(selectedPlatforms, production);
     }
 
     if (all || types.contains("assets")) {
