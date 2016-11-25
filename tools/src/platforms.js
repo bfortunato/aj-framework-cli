@@ -10,6 +10,9 @@ export const android = {
     mapAssetPath: function(path) {
         return "platforms/android/App/app/src/main/assets/" + path
     },
+    mapCodeBasePath: function(path) {
+        return "platforms/android/App/app/src/main/java/" + path
+    },
     mapImagePath: function(dir, name, extension, ratio, mipmap = false) {
         var quality = "";
         switch (ratio) {
@@ -83,6 +86,9 @@ export const ios = {
     name: "ios",
     mapAssetPath: function(path) {
         return "platforms/ios/App/App/assets/" + path
+    },
+    mapCodeBasePath: function(path) {
+        return "platforms/ios/App/App/" + path
     },
     mapImagePath: function(dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name  + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");

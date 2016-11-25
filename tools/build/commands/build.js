@@ -1,5 +1,11 @@
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.generateActions = generateActions;
+exports.generateStores = generateStores;
+
 var _platforms2 = require("../platforms");
 
 var PLATFORMS = _interopRequireWildcard(_platforms2);
@@ -320,6 +326,136 @@ function buildAppIcon(platforms) {
     });
 }
 
+function findAndroidPackage(codeBase) {
+    var result = {
+        success: false
+    };
+
+    var files = glob.sync(codeBase + "/**/Actions.java");
+    if (files && files.length > 0) {
+        var source = fs.readFileSync(files[0], "UTF8");
+        if (source) {
+            var reg = /package ([^;]+)/g;
+            var matches = reg.exec(source);
+            if (matches && matches.length > 0) {
+                result.pkg = matches[1];
+                result.success = true;
+            }
+        }
+    }
+
+    return result;
+}
+
+function findFilePath(codeBase, file) {
+    var result = {
+        success: false
+    };
+
+    var files = glob.sync(codeBase + "**/" + file);
+    if (files && files.length > 0) {
+        result.path = files[0];
+        result.success = true;
+    }
+
+    return result;
+}
+
+function generateActions(cb) {
+    var cwd = process.cwd();
+    var path = cwd + "/app/js/actions/index.js";
+
+    var actions = [];
+
+    fs.readFile(path, "UTF8", function (err, res) {
+        var reg = /createAction\(([^,]+)/g;
+        var matches = res.match(reg);
+
+        matches.forEach(function (m) {
+            var action = m.replace("createAction(", "");
+            actions.push(action);
+        });
+
+        var iosCode = "\n//\n//  Actions.swift\n//\n//  Auto generated from aj build\n//\n\nimport foundation\n        \nstruct Actions {\n" + actions.map(function (s) {
+            return "\tstatic let " + s + " = \"" + s + "\"";
+        }).join("\n") + "\n}\n";
+
+        var androidCode = "\n//\n//  Actions.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \nclass Actions {\n" + actions.map(function (s) {
+            return "\tpublic static final String " + s + " = \"" + s + "\";";
+        }).join("\n") + "\n}\n";
+
+        cb({
+            android: androidCode,
+            ios: iosCode
+        });
+    });
+}
+
+function generateStores(cb) {
+    var cwd = process.cwd();
+    var path = cwd + "/app/js/stores/index.js";
+
+    var stores = [];
+
+    fs.readFile(path, "UTF8", function (err, res) {
+        var reg = /createStore\(([^,]+)/g;
+        var matches = res.match(reg);
+
+        matches.forEach(function (m) {
+            var store = m.replace("createStore(", "");
+            stores.push(store);
+        });
+
+        var iosCode = "\n//\n//  Stores.swift\n//\n//  Auto generated from aj build\n//\n\nimport foundation\n        \nstruct Stores {\n" + stores.map(function (s) {
+            return "\tstatic let " + s + " = \"" + s + "\"";
+        }).join("\n") + "\n}\n";
+
+        var androidCode = "\n//\n//  Stores.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \nclass Stores {\n" + stores.map(function (s) {
+            return "\tpublic static final String " + s + " = \"" + s + "\";";
+        }).join("\n") + "\n}\n";
+
+        cb({
+            android: androidCode,
+            ios: iosCode
+        });
+    });
+}
+
+function buildDefinitions(platforms) {
+    generateStores(function (stores) {
+        return generateActions(function (actions) {
+            platforms.forEach(function (platform) {
+                if (platform.name == "ios") {
+                    var codeBase = platform.mapCodeBasePath("");
+                    var actionsIos = findFilePath(codeBase, "Actions.swift");
+                    var storesIos = findFilePath(codeBase, "Stores.swift");
+                    if (actionsIos.success && storesIos.success) {
+                        fs.writeFileSync(actionsIos.path, actions.ios);
+                        console.log("[GENERATED] " + actionsIos.path);
+                        fs.writeFileSync(storesIos.path, stores.ios);
+                        console.log("[GENERATED] " + storesIos.path);
+                    } else {
+                        console.log("[WARNING] Cannot generate definitions for iOS");
+                    }
+                } else if (platform.name == "android") {
+                    var _codeBase = platform.mapCodeBasePath("");
+                    var pkg = findAndroidPackage(_codeBase);
+                    var actionsJava = findFilePath(_codeBase, "Actions.java");
+                    var storesJava = findFilePath(_codeBase, "Stores.java");
+                    if (pkg.success && actionsJava.success && storesJava.success) {
+                        fs.writeFileSync(actionsJava.path, actions.android.replace("package applica.app;", "package " + pkg.pkg + ";"));
+                        console.log("[GENERATED] " + actionsJava.path);
+                        fs.writeFileSync(storesJava.path, stores.android.replace("package applica.app;", "package " + pkg.pkg + ";"));
+                        console.log("[GENERATED] " + storesJava.path);
+                    } else {
+                        console.log("[WARNING] Cannot generate definitions for Android");
+                    }
+                }
+            });
+        });
+    });
+}
+
 module.exports = function build(_platforms, types, production) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
@@ -365,5 +501,9 @@ module.exports = function build(_platforms, types, production) {
 
     if (all || types.contains("app_icon")) {
         buildAppIcon(selectedPlatforms);
+    }
+
+    if (all || types.contains("definitions")) {
+        buildDefinitions(selectedPlatforms);
     }
 };

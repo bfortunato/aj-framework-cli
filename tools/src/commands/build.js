@@ -308,6 +308,177 @@ function buildAppIcon(platforms) {
         })
 }
 
+function findAndroidPackage(codeBase) {
+    let result = {
+        success: false
+    };
+
+    let files = glob.sync(codeBase + "/**/Actions.java")
+    if (files && files.length > 0) {
+        let source = fs.readFileSync(files[0], "UTF8")
+        if (source) {
+            let reg = /package ([^;]+)/g
+            let matches = reg.exec(source)
+            if (matches && matches.length > 0) {
+                result.pkg = matches[1]
+                result.success = true
+            }
+        }
+    }
+
+    return result
+}
+
+function findFilePath(codeBase, file) {
+    let result = {
+        success: false
+    };
+
+    let files = glob.sync(codeBase + "**/" + file)
+    if (files && files.length > 0) {
+        result.path = files[0]
+        result.success = true
+    }
+
+    return result
+}
+
+
+export function generateActions(cb) {
+    let cwd = process.cwd()
+    let path = cwd + "/app/js/actions/index.js"
+
+    let actions = []
+
+    fs.readFile(path, "UTF8", (err, res) => {
+        let reg = /createAction\(([^,]+)/g
+        let matches = res.match(reg)
+
+        matches.forEach(m => {
+            let action = m.replace("createAction(", "")
+            actions.push(action)
+        })
+
+        let iosCode = `
+//
+//  Actions.swift
+//
+//  Auto generated from aj build
+//
+
+import foundation
+        
+struct Actions {
+${actions.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}
+}
+`
+
+        let androidCode = `
+//
+//  Actions.java
+//
+//  Auto generated from aj build
+//
+
+package applica.app;
+        
+class Actions {
+${actions.map(s => `\tpublic static final String ${s} = "${s}";`).join("\n")}
+}
+`
+
+        cb({
+            android: androidCode,
+            ios: iosCode
+        })
+    })
+}
+
+export function generateStores(cb) {
+    let cwd = process.cwd()
+    let path = cwd + "/app/js/stores/index.js"
+
+    let stores = []
+
+    fs.readFile(path, "UTF8", (err, res) => {
+        let reg = /createStore\(([^,]+)/g
+        let matches = res.match(reg)
+
+        matches.forEach(m => {
+            let store = m.replace("createStore(", "")
+            stores.push(store)
+        })
+
+        let iosCode = `
+//
+//  Stores.swift
+//
+//  Auto generated from aj build
+//
+
+import foundation
+        
+struct Stores {
+${stores.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}
+}
+`
+
+        let androidCode = `
+//
+//  Stores.java
+//
+//  Auto generated from aj build
+//
+
+package applica.app;
+        
+class Stores {
+${stores.map(s => `\tpublic static final String ${s} = "${s}";`).join("\n")}
+}
+`
+
+        cb({
+            android: androidCode,
+            ios: iosCode
+        })
+
+    })
+}
+
+
+function buildDefinitions(platforms) {
+    generateStores((stores) => generateActions(actions => {
+        platforms.forEach(platform => {
+            if (platform.name == "ios") {
+                let codeBase = platform.mapCodeBasePath("")
+                let actionsIos = findFilePath(codeBase, "Actions.swift")
+                let storesIos = findFilePath(codeBase, "Stores.swift")
+                if (actionsIos.success && storesIos.success) {
+                    fs.writeFileSync(actionsIos.path, actions.ios)
+                    console.log("[GENERATED] " + actionsIos.path)
+                    fs.writeFileSync(storesIos.path, stores.ios)
+                    console.log("[GENERATED] " + storesIos.path)
+                } else {
+                    console.log("[WARNING] Cannot generate definitions for iOS")
+                }
+            } else if (platform.name == "android") {
+                let codeBase = platform.mapCodeBasePath("")
+                let pkg = findAndroidPackage(codeBase)
+                let actionsJava = findFilePath(codeBase, "Actions.java")
+                let storesJava = findFilePath(codeBase, "Stores.java")
+                if (pkg.success && actionsJava.success && storesJava.success) {
+                    fs.writeFileSync(actionsJava.path, actions.android.replace("package applica.app;", "package " + pkg.pkg + ";"))
+                    console.log("[GENERATED] " + actionsJava.path)
+                    fs.writeFileSync(storesJava.path, stores.android.replace("package applica.app;", "package " + pkg.pkg + ";"))
+                    console.log("[GENERATED] " + storesJava.path)
+                } else {
+                    console.log("[WARNING] Cannot generate definitions for Android")
+                }
+            }
+        })
+    }))
+}
+
 module.exports = function build(_platforms, types, production) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
@@ -353,7 +524,9 @@ module.exports = function build(_platforms, types, production) {
         buildAppIcon(selectedPlatforms);
     }
 
-
+    if (all || types.contains("definitions")) {
+        buildDefinitions(selectedPlatforms);
+    }
 
 
 };

@@ -16,6 +16,9 @@ var android = exports.android = {
     mapAssetPath: function mapAssetPath(path) {
         return "platforms/android/App/app/src/main/assets/" + path;
     },
+    mapCodeBasePath: function mapCodeBasePath(path) {
+        return "platforms/android/App/app/src/main/java/" + path;
+    },
     mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         var mipmap = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
@@ -88,6 +91,9 @@ var ios = exports.ios = {
     name: "ios",
     mapAssetPath: function mapAssetPath(path) {
         return "platforms/ios/App/App/assets/" + path;
+    },
+    mapCodeBasePath: function mapCodeBasePath(path) {
+        return "platforms/ios/App/App/" + path;
     },
     mapImagePath: function mapImagePath(dir, name, extension, ratio) {
         return ("platforms/ios/App/App/Assets.xcassets/" + name + ".imageset/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
