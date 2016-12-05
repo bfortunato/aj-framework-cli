@@ -384,7 +384,7 @@ ${actions.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}
 
 package applica.app;
         
-class Actions {
+public class Actions {
 ${actions.map(s => `\tpublic static final String ${s} = "${s}";`).join("\n")}
 }
 `
@@ -436,7 +436,7 @@ ${stores.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}
 
 package applica.app;
         
-class Stores {
+public class Stores {
 ${stores.map(s => `\tpublic static final String ${s} = "${s}";`).join("\n")}
 }
 `
