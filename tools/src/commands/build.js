@@ -346,11 +346,13 @@ function findFilePath(codeBase, file) {
 
 export function generateActions(cb) {
     let cwd = process.cwd()
-    let path = cwd + "/app/js/actions/index.js"
+    let path = cwd + "/app/js/actions.js"
 
     let actions = []
 
     fs.readFile(path, "UTF8", (err, res) => {
+        if (!res) { return }
+
         let reg = /createAction\(([^,]+)/g
         let matches = res.match(reg)
 
@@ -366,7 +368,7 @@ export function generateActions(cb) {
 //  Auto generated from aj build
 //
 
-import foundation
+import Foundation
         
 struct Actions {
 ${actions.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}
@@ -396,11 +398,13 @@ ${actions.map(s => `\tpublic static final String ${s} = "${s}";`).join("\n")}
 
 export function generateStores(cb) {
     let cwd = process.cwd()
-    let path = cwd + "/app/js/stores/index.js"
+    let path = cwd + "/app/js/stores.js"
 
     let stores = []
 
     fs.readFile(path, "UTF8", (err, res) => {
+        if (!res) { return }
+
         let reg = /createStore\(([^,]+)/g
         let matches = res.match(reg)
 
@@ -416,7 +420,7 @@ export function generateStores(cb) {
 //  Auto generated from aj build
 //
 
-import foundation
+import Foundation
         
 struct Stores {
 ${stores.map(s => `\tstatic let ${s} = "${s}"`).join("\n")}

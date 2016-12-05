@@ -363,24 +363,28 @@ function findFilePath(codeBase, file) {
 
 function generateActions(cb) {
     var cwd = process.cwd();
-    var path = cwd + "/app/js/actions/index.js";
+    var path = cwd + "/app/js/actions.js";
 
     var actions = [];
 
     fs.readFile(path, "UTF8", function (err, res) {
+        if (!res) {
+            return;
+        }
+
         var reg = /createAction\(([^,]+)/g;
         var matches = res.match(reg);
 
         matches.forEach(function (m) {
-            var action = m.replace("createAction(", "").replace("types.", "");
+            var action = m.replace("createAction(", "");
             actions.push(action);
         });
 
-        var iosCode = "\n//\n//  Actions.swift\n//\n//  Auto generated from aj build\n//\n\nimport Foundation\n        \nstruct Actions {\n" + actions.map(function (s) {
+        var iosCode = "\n//\n//  Actions.swift\n//\n//  Auto generated from aj build\n//\n\nimport foundation\n        \nstruct Actions {\n" + actions.map(function (s) {
             return "\tstatic let " + s + " = \"" + s + "\"";
         }).join("\n") + "\n}\n";
 
-        var androidCode = "\n//\n//  Actions.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \npublic class Actions {\n" + actions.map(function (s) {
+        var androidCode = "\n//\n//  Actions.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \nclass Actions {\n" + actions.map(function (s) {
             return "\tpublic static final String " + s + " = \"" + s + "\";";
         }).join("\n") + "\n}\n";
 
@@ -393,24 +397,28 @@ function generateActions(cb) {
 
 function generateStores(cb) {
     var cwd = process.cwd();
-    var path = cwd + "/app/js/stores/index.js";
+    var path = cwd + "/app/js/stores.js";
 
     var stores = [];
 
     fs.readFile(path, "UTF8", function (err, res) {
+        if (!res) {
+            return;
+        }
+
         var reg = /createStore\(([^,]+)/g;
         var matches = res.match(reg);
 
         matches.forEach(function (m) {
-            var store = m.replace("createStore(", "").replace("types.", "");
+            var store = m.replace("createStore(", "");
             stores.push(store);
         });
 
-        var iosCode = "\n//\n//  Stores.swift\n//\n//  Auto generated from aj build\n//\n\nimport Foundation\n        \nstruct Stores {\n" + stores.map(function (s) {
+        var iosCode = "\n//\n//  Stores.swift\n//\n//  Auto generated from aj build\n//\n\nimport foundation\n        \nstruct Stores {\n" + stores.map(function (s) {
             return "\tstatic let " + s + " = \"" + s + "\"";
         }).join("\n") + "\n}\n";
 
-        var androidCode = "\n//\n//  Stores.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \npublic class Stores {\n" + stores.map(function (s) {
+        var androidCode = "\n//\n//  Stores.java\n//\n//  Auto generated from aj build\n//\n\npackage applica.app;\n        \nclass Stores {\n" + stores.map(function (s) {
             return "\tpublic static final String " + s + " = \"" + s + "\";";
         }).join("\n") + "\n}\n";
 
