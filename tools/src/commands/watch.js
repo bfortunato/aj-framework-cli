@@ -47,7 +47,12 @@ function transpile(sourceFile, platforms) {
         } else {
             platforms.forEach(function(platform) {
                 if (platform.combineScripts) {
-                    build([platform.name], ["scripts"]);
+                    try {
+                        build([platform.name], ["scripts"]);
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                    }
                 } else {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
