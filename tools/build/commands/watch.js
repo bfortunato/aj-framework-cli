@@ -13,6 +13,7 @@ var watch = require("glob-watcher");
 var path = require("path");
 var fs = require("fs");
 var fsExtra = require("fs-extra");
+var player = require("play-sound")();
 
 var utils = require("../utils");
 
@@ -20,6 +21,7 @@ var ALL_PLATFORMS = [];
 for (var k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
+
 
 var scriptsDir = "app/js/";
 
@@ -34,6 +36,10 @@ function log(msg) {
     console.log('[' + (hour < 10 ? '0' + hour : hour) + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds) + '.' + ('00' + milliseconds).slice(-3) + '] ' + msg);
 }
 
+function notify(type) {
+    player.play(__dirname + "/../../resources/" + type + ".mp3", function (err) {});
+}
+
 function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
@@ -44,7 +50,14 @@ function transpile(sourceFile, platforms) {
         } else {
             platforms.forEach(function (platform) {
                 if (platform.combineScripts) {
-                    (0, _commands.build)([platform.name], ["scripts"]);
+                    try {
+                        (0, _commands.build)([platform.name], ["scripts"], false, function () {
+                            return notify("build");
+                        });
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                    }
                 } else {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
@@ -61,6 +74,8 @@ function transpile(sourceFile, platforms) {
             });
 
             log("[COMPILED] " + sourceFile);
+
+            notify("watch");
         }
     });
 }
