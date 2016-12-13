@@ -3,6 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports.generateActions = generateActions;
 exports.generateStores = generateStores;
 
@@ -11,8 +14,6 @@ var _platforms2 = require("../platforms");
 var PLATFORMS = _interopRequireWildcard(_platforms2);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 var babel = require("babel-core");
 var glob = require("glob");
@@ -85,12 +86,12 @@ function buildRasterImages(platforms) {
                                             if (platform.ratios.indexOf(m) != -1) {
                                                 var dest;
 
-                                                var _ret3 = (function () {
+                                                var _ret3 = function () {
                                                     dest = platform.mapImagePath(destDir, imageName, ".png", m);
 
                                                     if (dest == null) {
                                                         return {
-                                                            v: undefined
+                                                            v: void 0
                                                         };
                                                     }
                                                     if (!fs.existsSync(path.dirname(dest))) {
@@ -120,7 +121,7 @@ function buildRasterImages(platforms) {
                                                             }
                                                         }
                                                     });
-                                                })();
+                                                }();
 
                                                 if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
                                             }
@@ -192,7 +193,7 @@ function buildSvgImages(platforms) {
 
 var scriptsDir = "app/js/";
 var libsDir = "app/js/libs/";
-function buildScripts(platforms, production) {
+function buildScripts(platforms, production, cb) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
             platform.combined = [];
@@ -301,6 +302,10 @@ function buildScripts(platforms, production) {
                 }
             }
         });
+
+        if (cb) {
+            cb();
+        }
     });
 };
 
@@ -464,7 +469,7 @@ function buildDefinitions(platforms) {
     });
 }
 
-module.exports = function build(_platforms, types, production) {
+module.exports = function build(_platforms, types, production, scriptsCb) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
@@ -496,7 +501,7 @@ module.exports = function build(_platforms, types, production) {
     all = types.contains("all");
 
     if (all || types.contains("scripts")) {
-        buildScripts(selectedPlatforms, production);
+        buildScripts(selectedPlatforms, production, scriptsCb);
     }
 
     if (all || types.contains("assets")) {

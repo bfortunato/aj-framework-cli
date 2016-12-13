@@ -170,7 +170,7 @@ function buildSvgImages(platforms) {
 
 var scriptsDir = "app/js/";
 var libsDir = "app/js/libs/";
-function buildScripts(platforms, production) {
+function buildScripts(platforms, production, cb) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
             platform.combined = [];
@@ -281,7 +281,12 @@ function buildScripts(platforms, production) {
                 }
             }
         });
+
+        if (cb) {
+            cb()
+        }
     });
+
 };
 
 function buildAppIcon(platforms) {
@@ -483,7 +488,7 @@ function buildDefinitions(platforms) {
     }))
 }
 
-module.exports = function build(_platforms, types, production) {
+module.exports = function build(_platforms, types, production, scriptsCb) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
@@ -513,7 +518,7 @@ module.exports = function build(_platforms, types, production) {
     all = types.contains("all");
 
     if (all || types.contains("scripts")) {
-        buildScripts(selectedPlatforms, production);
+        buildScripts(selectedPlatforms, production, scriptsCb);
     }
 
     if (all || types.contains("assets")) {

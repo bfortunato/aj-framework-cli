@@ -5,6 +5,7 @@ const watch = require("glob-watcher");
 const path = require("path");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
+const player = require("play-sound")();
 
 const utils = require("../utils");
 
@@ -37,6 +38,10 @@ function log(msg) {
 
 }
 
+function notify(type) {
+    player.play(__dirname + "/../../resources/" + type + ".mp3", function(err) {})
+}
+
 function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
@@ -47,7 +52,12 @@ function transpile(sourceFile, platforms) {
         } else {
             platforms.forEach(function(platform) {
                 if (platform.combineScripts) {
-                    build([platform.name], ["scripts"]);
+                    try {
+                        build([platform.name], ["scripts"], false, () => notify("build"));
+                    } catch (error) {
+                        console.log(error.message);
+                        console.log(error.stack);
+                    }
                 } else {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
@@ -64,6 +74,8 @@ function transpile(sourceFile, platforms) {
             });
 
             log("[COMPILED] " + sourceFile);
+
+            notify("watch")
         }
     });
 }
