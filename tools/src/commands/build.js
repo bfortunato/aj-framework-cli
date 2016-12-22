@@ -220,10 +220,11 @@ function buildScripts(platforms, production, cb) {
 
     glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
         files.forEach(function (sourceFile) {
+            var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
+            var scriptName = path.basename(sourceFile);
+            var moduleName = path.join(relativeDir, scriptName);
+
             if (sourceFile.indexOf(libsDir) != -1) {
-                var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-                var scriptName = path.basename(sourceFile);
-                var moduleName = path.join(relativeDir, scriptName);
                 platforms.forEach(function (platform) {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
@@ -252,9 +253,6 @@ function buildScripts(platforms, production, cb) {
                 return;
             }
 
-            var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-            var scriptName = path.basename(sourceFile);
-            var moduleName = path.join(relativeDir, scriptName);
             moduleName = moduleName.replace(".jsx", ".js");
             var result = null;
             function getResult() {
