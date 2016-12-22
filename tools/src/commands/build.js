@@ -168,12 +168,53 @@ function buildSvgImages(platforms) {
     });
 }
 
+function getCombined(combinedList, moduleName) {
+    for (var i = 0; i < combinedList.length; i++) {
+        if (combinedList[i].module == moduleName) {
+            return combinedList[i]
+        }
+    }
+
+    return null;
+}
+
+function combinedNeedsUpdate(combinedList, moduleName) {
+    var combined = getCombined(combinedList, moduleName)
+    if (combined != null) {
+        return combined.dirty
+    } else {
+        return true
+    }
+}
+
+function setCombined(combinedList, moduleName, source) {
+    var combined = getCombined(combinedList, moduleName)
+    if (combined == null) {
+        combined = {module: moduleName}
+        combinedList.push(combined)
+    }
+
+    combined.source = source
+    combined.dirty = false
+}
+
+function validateCombined(combinedList, moduleName) {
+    var combined = getCombined(combinedList, moduleName)
+    if (combined != null) {
+        combined.valid = true;
+    }
+}
+
 var scriptsDir = "app/js/";
 var libsDir = "app/js/libs/";
 function buildScripts(platforms, production, cb) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
-            platform.combined = [];
+            if (!platform.combined) {
+                platform.combined = [];
+            } else {
+                platform.combined.forEach(c => c.valid = false)
+            }
         }
     });
 
@@ -189,13 +230,15 @@ function buildScripts(platforms, production, cb) {
                     var destFile = path.join(destDir, scriptName);
                     try {
                         if (platform.combineScripts) {
-                            var source = fs.readFileSync(sourceFile);
+                            if (combinedNeedsUpdate(platform.combined, moduleName)) {
+                                var source = fs.readFileSync(sourceFile);
+                                setCombined(platform.combined, moduleName, source)
 
-                            platform.combined.push({
-                                module: moduleName,
-                                source: source
-                            });
-                            console.log("[COMBINELIB] " + moduleName);
+                                console.log("[COMBINELIB] " + moduleName);
+                            } else {
+                                console.log("[CACHEDLIB] " + moduleName);
+                            }
+                            validateCombined(platform.combined, moduleName);
                         } else {
                             fsExtra.copySync(sourceFile, destFile);
                             console.log("[COPIED] " + sourceFile + " == " + destFile);
@@ -213,7 +256,14 @@ function buildScripts(platforms, production, cb) {
             var scriptName = path.basename(sourceFile);
             var moduleName = path.join(relativeDir, scriptName);
             moduleName = moduleName.replace(".jsx", ".js");
-            var result = babel.transformFileSync(sourceFile, {presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve)});
+            var result = null;
+            function getResult() {
+                if (result == null) {
+                    result = babel.transformFileSync(sourceFile, {presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve)});
+                }
+
+                return result;
+            }
 
             platforms.forEach(function (platform) {
                 var jsDir = platform.mapAssetPath("js");
@@ -222,23 +272,26 @@ function buildScripts(platforms, production, cb) {
                 destFile = destFile.replace(".jsx", ".js");
                 try {
                     if (platform.combineScripts) {
-                        platform.combined.push({
-                            module: moduleName,
-                            source: result.code
-                        });
+                        if (combinedNeedsUpdate(platform.combined, moduleName)) {
+                            setCombined(platform.combined, moduleName, getResult().code)
 
-                        console.log("[COMBINED] " + moduleName);
+                            console.log("[COMBINED] " + moduleName);
+                        } else {
+                            console.log("[CACHED] " + moduleName);
+                        }
+
+                        validateCombined(platform.combined, moduleName)
                     } else {
                         fsExtra.mkdirpSync(destDir);
 
                         if (production) {
-                            let uglified = uglifyjs.minify(result.code, {fromString: true})
+                            let uglified = uglifyjs.minify(getResult().code, {fromString: true})
 
                             fs.writeFileSync(destFile, uglified.code);
 
                             console.log("[COMPILED.MIN] " + sourceFile + " == " + destFile);
                         } else {
-                            fs.writeFileSync(destFile, result.code);
+                            fs.writeFileSync(destFile, getResult().code);
                             console.log("[COMPILED] " + sourceFile + " => " + destFile);
                         }
                     }
@@ -259,9 +312,11 @@ function buildScripts(platforms, production, cb) {
                 var code = "";
 
                 platform.combined.forEach(function (c) {
-                    code += ("define('" + c.module + "', function(module, exports) {\n" +
-                                c.source + "\n" +
-                            "});\n")
+                    if (c.valid) {
+                        code += ("define('" + c.module + "', function(module, exports) {\n" +
+                                    c.source + "\n" +
+                                 "});\n")
+                    }
                 });
 
                 code += "\nrequire('./aj').createRuntime();";

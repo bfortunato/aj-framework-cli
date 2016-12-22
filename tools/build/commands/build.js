@@ -3,9 +3,6 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 exports.generateActions = generateActions;
 exports.generateStores = generateStores;
 
@@ -14,6 +11,8 @@ var _platforms2 = require("../platforms");
 var PLATFORMS = _interopRequireWildcard(_platforms2);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 var babel = require("babel-core");
 var glob = require("glob");
@@ -86,12 +85,12 @@ function buildRasterImages(platforms) {
                                             if (platform.ratios.indexOf(m) != -1) {
                                                 var dest;
 
-                                                var _ret3 = function () {
+                                                var _ret3 = (function () {
                                                     dest = platform.mapImagePath(destDir, imageName, ".png", m);
 
                                                     if (dest == null) {
                                                         return {
-                                                            v: void 0
+                                                            v: undefined
                                                         };
                                                     }
                                                     if (!fs.existsSync(path.dirname(dest))) {
@@ -121,7 +120,7 @@ function buildRasterImages(platforms) {
                                                             }
                                                         }
                                                     });
-                                                }();
+                                                })();
 
                                                 if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
                                             }
@@ -191,12 +190,55 @@ function buildSvgImages(platforms) {
     });
 }
 
+function getCombined(combinedList, moduleName) {
+    for (var i = 0; i < combinedList.length; i++) {
+        if (combinedList[i].module == moduleName) {
+            return combinedList[i];
+        }
+    }
+
+    return null;
+}
+
+function combinedNeedsUpdate(combinedList, moduleName) {
+    var combined = getCombined(combinedList, moduleName);
+    if (combined != null) {
+        return combined.dirty;
+    } else {
+        return true;
+    }
+}
+
+function setCombined(combinedList, moduleName, source) {
+    var combined = getCombined(combinedList, moduleName);
+    if (combined == null) {
+        combined = { module: moduleName };
+        combinedList.push(combined);
+    }
+
+    combined.source = source;
+    combined.dirty = false;
+}
+
+function validateCombined(combinedList, moduleName) {
+    var combined = getCombined(combinedList, moduleName);
+    if (combined != null) {
+        combined.valid = true;
+    }
+}
+
 var scriptsDir = "app/js/";
 var libsDir = "app/js/libs/";
 function buildScripts(platforms, production, cb) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
-            platform.combined = [];
+            if (!platform.combined) {
+                platform.combined = [];
+            } else {
+                platform.combined.forEach(function (c) {
+                    return c.valid = false;
+                });
+            }
         }
     });
 
@@ -212,13 +254,15 @@ function buildScripts(platforms, production, cb) {
                     var destFile = path.join(destDir, scriptName);
                     try {
                         if (platform.combineScripts) {
-                            var source = fs.readFileSync(sourceFile);
+                            if (combinedNeedsUpdate(platform.combined, moduleName)) {
+                                var source = fs.readFileSync(sourceFile);
+                                setCombined(platform.combined, moduleName, source);
 
-                            platform.combined.push({
-                                module: moduleName,
-                                source: source
-                            });
-                            console.log("[COMBINELIB] " + moduleName);
+                                console.log("[COMBINELIB] " + moduleName);
+                            } else {
+                                console.log("[CACHEDLIB] " + moduleName);
+                            }
+                            validateCombined(platform.combined, moduleName);
                         } else {
                             fsExtra.copySync(sourceFile, destFile);
                             console.log("[COPIED] " + sourceFile + " == " + destFile);
@@ -236,7 +280,14 @@ function buildScripts(platforms, production, cb) {
             var scriptName = path.basename(sourceFile);
             var moduleName = path.join(relativeDir, scriptName);
             moduleName = moduleName.replace(".jsx", ".js");
-            var result = babel.transformFileSync(sourceFile, { presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve) });
+            var result = null;
+            function getResult() {
+                if (result == null) {
+                    result = babel.transformFileSync(sourceFile, { presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve) });
+                }
+
+                return result;
+            }
 
             platforms.forEach(function (platform) {
                 var jsDir = platform.mapAssetPath("js");
@@ -245,23 +296,26 @@ function buildScripts(platforms, production, cb) {
                 destFile = destFile.replace(".jsx", ".js");
                 try {
                     if (platform.combineScripts) {
-                        platform.combined.push({
-                            module: moduleName,
-                            source: result.code
-                        });
+                        if (combinedNeedsUpdate(platform.combined, moduleName)) {
+                            setCombined(platform.combined, moduleName, getResult().code);
 
-                        console.log("[COMBINED] " + moduleName);
+                            console.log("[COMBINED] " + moduleName);
+                        } else {
+                            console.log("[CACHED] " + moduleName);
+                        }
+
+                        validateCombined(platform.combined, moduleName);
                     } else {
                         fsExtra.mkdirpSync(destDir);
 
                         if (production) {
-                            var uglified = uglifyjs.minify(result.code, { fromString: true });
+                            var uglified = uglifyjs.minify(getResult().code, { fromString: true });
 
                             fs.writeFileSync(destFile, uglified.code);
 
                             console.log("[COMPILED.MIN] " + sourceFile + " == " + destFile);
                         } else {
-                            fs.writeFileSync(destFile, result.code);
+                            fs.writeFileSync(destFile, getResult().code);
                             console.log("[COMPILED] " + sourceFile + " => " + destFile);
                         }
                     }
@@ -282,7 +336,9 @@ function buildScripts(platforms, production, cb) {
                 var code = "";
 
                 platform.combined.forEach(function (c) {
-                    code += "define('" + c.module + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
+                    if (c.valid) {
+                        code += "define('" + c.module + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
+                    }
                 });
 
                 code += "\nrequire('./aj').createRuntime();";

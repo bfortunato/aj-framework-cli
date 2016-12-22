@@ -10,7 +10,7 @@ function list(val) {
 }
 
 program
-    .version("aj-framework-cli v1.0.12")
+    .version("aj-framework-cli v1.0.13")
 
 program
     .command("init <path>")

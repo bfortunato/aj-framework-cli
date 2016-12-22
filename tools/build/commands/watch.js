@@ -22,7 +22,6 @@ for (var k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
 
-
 var scriptsDir = "app/js/";
 
 function log(msg) {
@@ -43,14 +42,40 @@ function notify(type) {
 function transpile(sourceFile, platforms) {
     var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.basename(sourceFile);
+    var moduleName = path.join(relativeDir, scriptName);
+    moduleName = moduleName.replace(".jsx", ".js");
+
+    function getCombined(combinedList, moduleName) {
+        for (var i = 0; i < combinedList.length; i++) {
+            if (combinedList[i].module == moduleName) {
+                return combinedList[i];
+            }
+        }
+
+        return null;
+    }
+
+    function touchCombined(combinedList, moduleName) {
+        var combined = getCombined(combinedList, moduleName);
+        if (combined != null) {
+            combined.dirty = true;
+        }
+    }
+
     babel.transformFile(sourceFile, { presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve) }, function (err, result) {
         if (err) {
+            notify("error");
             console.log(err.message);
             console.log(err.codeFrame);
         } else {
             platforms.forEach(function (platform) {
                 if (platform.combineScripts) {
+                    if (!platform.combined) {
+                        platform.combined = [];
+                    }
+
                     try {
+                        touchCombined(platform.combined, moduleName);
                         (0, _commands.build)([platform.name], ["scripts"], false, function () {
                             return notify("build");
                         });
