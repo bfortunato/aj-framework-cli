@@ -22,6 +22,7 @@ for (var k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
 
+
 var scriptsDir = "app/js/";
 
 function log(msg) {

@@ -3,6 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports.generateActions = generateActions;
 exports.generateStores = generateStores;
 
@@ -11,8 +14,6 @@ var _platforms2 = require("../platforms");
 var PLATFORMS = _interopRequireWildcard(_platforms2);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 var babel = require("babel-core");
 var glob = require("glob");
@@ -85,12 +86,12 @@ function buildRasterImages(platforms) {
                                             if (platform.ratios.indexOf(m) != -1) {
                                                 var dest;
 
-                                                var _ret3 = (function () {
+                                                var _ret3 = function () {
                                                     dest = platform.mapImagePath(destDir, imageName, ".png", m);
 
                                                     if (dest == null) {
                                                         return {
-                                                            v: undefined
+                                                            v: void 0
                                                         };
                                                     }
                                                     if (!fs.existsSync(path.dirname(dest))) {
@@ -120,7 +121,7 @@ function buildRasterImages(platforms) {
                                                             }
                                                         }
                                                     });
-                                                })();
+                                                }();
 
                                                 if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
                                             }
@@ -244,10 +245,11 @@ function buildScripts(platforms, production, cb) {
 
     glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
         files.forEach(function (sourceFile) {
+            var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
+            var scriptName = path.basename(sourceFile);
+            var moduleName = path.join(relativeDir, scriptName);
+
             if (sourceFile.indexOf(libsDir) != -1) {
-                var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-                var scriptName = path.basename(sourceFile);
-                var moduleName = path.join(relativeDir, scriptName);
                 platforms.forEach(function (platform) {
                     var jsDir = platform.mapAssetPath("js");
                     var destDir = path.join(jsDir, relativeDir);
@@ -276,9 +278,6 @@ function buildScripts(platforms, production, cb) {
                 return;
             }
 
-            var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-            var scriptName = path.basename(sourceFile);
-            var moduleName = path.join(relativeDir, scriptName);
             moduleName = moduleName.replace(".jsx", ".js");
             var result = null;
             function getResult() {
@@ -433,11 +432,11 @@ function generateActions(cb) {
             return;
         }
 
-        var reg = /createAction\(([^,]+)/g;
+        var reg = /(createAction|createAsyncAction)\(([^,]+)/g;
         var matches = res.match(reg);
 
         matches.forEach(function (m) {
-            var action = m.replace("createAction(", "");
+            var action = m.replace("createAction(", "").replace("createAsyncAction(", "");
             actions.push(action);
         });
 
@@ -572,7 +571,7 @@ module.exports = function build(_platforms, types, production, scriptsCb) {
         buildAppIcon(selectedPlatforms);
     }
 
-    if (all || types.contains("definitions")) {
+    if (types.contains("definitions")) {
         buildDefinitions(selectedPlatforms);
     }
 };

@@ -411,11 +411,11 @@ export function generateActions(cb) {
     fs.readFile(path, "UTF8", (err, res) => {
         if (!res) { return }
 
-        let reg = /createAction\(([^,]+)/g
+        let reg = /(createAction|createAsyncAction)\(([^,]+)/g
         let matches = res.match(reg)
 
         matches.forEach(m => {
-            let action = m.replace("createAction(", "")
+            let action = m.replace("createAction(", "").replace("createAsyncAction(", "")
             actions.push(action)
         })
 
@@ -586,7 +586,7 @@ module.exports = function build(_platforms, types, production, scriptsCb) {
         buildAppIcon(selectedPlatforms);
     }
 
-    if (all || types.contains("definitions")) {
+    if (types.contains("definitions")) {
         buildDefinitions(selectedPlatforms);
     }
 
