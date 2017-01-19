@@ -12,18 +12,13 @@ var PLATFORMS = _interopRequireWildcard(_platforms2);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
-var babel = require("babel-core");
 var glob = require("glob");
 var path = require("path");
 var fs = require("fs");
 var fsExtra = require("fs-extra");
 var pn = require("pn/fs");
-var sharp = require("sharp");
 
 var utils = require("../utils");
-var uglifyjs = require("uglifyjs");
 
 var ALL_PLATFORMS = [];
 for (var k in PLATFORMS) {
@@ -34,202 +29,9 @@ Array.prototype.contains = function (el) {
     return this.indexOf(el) != -1;
 };
 
-function buildAssets(platforms) {
-    var assetsDir = "app/assets/";
-    glob(assetsDir + "**/*", function (error, files) {
-        files.forEach(function (sourceFile) {
-            var relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
-            var fileName = path.basename(sourceFile);
-            platforms.forEach(function (platform) {
-                var platformDir = platform.mapAssetPath("");
-                var destDir = path.join(platformDir, relativeDir);
-                var destFile = path.join(destDir, fileName);
-                try {
-                    fsExtra.copySync(sourceFile, destFile);
+var extensions = ["js", "jsx", "html", "java", "h", "c", "cpp", "swift", "sass", "css", "png", "jpg"];
 
-                    console.log("[ASSET] " + sourceFile + " == " + destFile);
-                } catch (error) {
-                    console.log(error.message);
-                    console.log(error.stack);
-                    process.exit(1);
-                }
-            });
-        });
-    });
-}
-
-function buildRasterImages(platforms) {
-    var sourceDir = "app/resources/images/";
-    glob(sourceDir + "**/*[.png|.jpg]", function (err, files) {
-        files.forEach(function (sourcePath) {
-            if (sourcePath.indexOf("@") == -1) {
-                (function () {
-                    //already converted
-                    var ext = path.extname(sourcePath).toLowerCase();
-                    var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    var imageName = path.basename(sourcePath, ext);
-                    var ratios = PLATFORMS.android.ratios;
-                    var callbackCounter = 0;
-
-                    sharp(sourcePath).metadata().then(function (metadata) {
-                        try {
-                            (function () {
-                                var originalWidth = metadata.width;
-                                var originalHeight = metadata.height;
-
-                                platforms.forEach(function (platform) {
-                                    for (var i = 0; i < ratios.length; i++) {
-                                        (function (m) {
-                                            var factor = m / 4;
-
-                                            if (platform.ratios.indexOf(m) != -1) {
-                                                var dest;
-
-                                                var _ret3 = (function () {
-                                                    dest = platform.mapImagePath(destDir, imageName, ".png", m);
-
-                                                    if (dest == null) {
-                                                        return {
-                                                            v: undefined
-                                                        };
-                                                    }
-                                                    if (!fs.existsSync(path.dirname(dest))) {
-                                                        fsExtra.mkdirpSync(path.dirname(dest));
-                                                    }
-
-                                                    var width = parseInt(originalWidth * factor);
-                                                    var height = parseInt(originalHeight * factor);
-
-                                                    callbackCounter++;
-                                                    sharp(sourcePath).resize(width, height).toFile(dest, function (err) {
-                                                        if (err) {
-                                                            console.error("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + width + ", h=" + height + ")" + err);
-                                                        } else {
-                                                            console.log("[SCALED] " + dest + " " + JSON.stringify({
-                                                                width: width,
-                                                                height: height
-                                                            }));
-                                                        }
-
-                                                        callbackCounter--;
-
-                                                        //at the end of all operations
-                                                        if (callbackCounter == 0) {
-                                                            if (platform.afterImage) {
-                                                                platform.afterImage(destDir, imageName, ".png");
-                                                            }
-                                                        }
-                                                    });
-                                                })();
-
-                                                if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
-                                            }
-                                        })(ratios[i]);
-                                    }
-                                });
-                            })();
-                        } catch (e) {
-                            console.error(e);
-                            console.error(e.stack);
-                        }
-                    });
-                })();
-            }
-        });
-    });
-}
-
-function buildSvgImages(platforms) {
-    var sourceDir = "app/resources/images/";
-    glob(sourceDir + "**/*.svg", function (err, files) {
-        files.forEach(function (sourcePath) {
-            console.log("Working on " + sourcePath);
-            if (sourcePath.indexOf("@") == -1) {
-                //already converted
-                easyimage.info(sourcePath).then(function (info) {
-                    var ext = path.extname(sourcePath).toLowerCase();
-                    var relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    var imageName = path.basename(sourcePath, ext);
-                    var ratios = PLATFORMS.android.ratios;
-                    for (var i = 0; i < ratios.length; i++) {
-                        (function (m) {
-                            var factor = m;
-                            pn.readFile(sourcePath).then(function (buffer) {
-                                return svg2png(buffer, { width: parseInt(info.width * factor), height: parseInt(info.height * factor) });
-                            }).then(function (buffer) {
-                                platforms.forEach(function (platform) {
-                                    if (platform.ratios.indexOf(m) != -1) {
-                                        var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
-                                        if (dest == null) {
-                                            return;
-                                        }
-
-                                        if (!fs.existsSync(path.dirname(dest))) {
-                                            fsExtra.mkdirpSync(path.dirname(dest));
-                                        }
-                                        fs.writeFile(dest, buffer);
-
-                                        console.log(dest + " " + JSON.stringify({
-                                            width: info.width * factor,
-                                            height: info.height * factor
-                                        }));
-                                    }
-
-                                    if (platform.afterImage) {
-                                        platform.afterImage(relativeDir, imageName, ".png");
-                                    }
-                                });
-                            }).catch(function (e) {
-                                console.log(e.message);console.error(e.stack);
-                            });
-                        })(ratios[i]);
-                    }
-                });
-            }
-        });
-    });
-}
-
-function getCombined(combinedList, moduleName) {
-    for (var i = 0; i < combinedList.length; i++) {
-        if (combinedList[i].module == moduleName) {
-            return combinedList[i];
-        }
-    }
-
-    return null;
-}
-
-function combinedNeedsUpdate(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName);
-    if (combined != null) {
-        return combined.dirty;
-    } else {
-        return true;
-    }
-}
-
-function setCombined(combinedList, moduleName, source) {
-    var combined = getCombined(combinedList, moduleName);
-    if (combined == null) {
-        combined = { module: moduleName };
-        combinedList.push(combined);
-    }
-
-    combined.source = source;
-    combined.dirty = false;
-}
-
-function validateCombined(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName);
-    if (combined != null) {
-        combined.valid = true;
-    }
-}
-
-var scriptsDir = "app/js/";
-var libsDir = "app/js/libs/";
-function buildScripts(platforms, production, cb) {
+function doUpdate(source, force) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
             if (!platform.combined) {
@@ -242,7 +44,7 @@ function buildScripts(platforms, production, cb) {
         }
     });
 
-    glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
+    glob(sourceDir + "**/*.{" + extensions.join(",") + "}", function (error, files) {
         files.forEach(function (sourceFile) {
             var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
             var scriptName = path.basename(sourceFile);

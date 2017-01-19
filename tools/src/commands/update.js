@@ -1,15 +1,12 @@
 "use strict";
 
-const babel = require("babel-core");
 const glob = require("glob");
 const path = require("path");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const pn = require("pn/fs");
-const sharp = require("sharp");
 
 const utils = require("../utils");
-const uglifyjs = require("uglifyjs")
 
 import * as PLATFORMS from "../platforms"
 const ALL_PLATFORMS = [];
@@ -21,193 +18,23 @@ Array.prototype.contains = function(el) {
     return this.indexOf(el) != -1;
 };
 
-function buildAssets(platforms) {
-    var assetsDir = "app/assets/";
-    glob(assetsDir + "**/*", function(error, files) {
-        files.forEach(function(sourceFile) {
-            var relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
-            var fileName = path.basename(sourceFile);
-            platforms.forEach(function(platform) {
-                var platformDir = platform.mapAssetPath("");
-                var destDir = path.join(platformDir, relativeDir);
-                var destFile = path.join(destDir, fileName);
-                try {
-                    fsExtra.copySync(sourceFile, destFile);
-
-                    console.log("[ASSET] " + sourceFile + " == " + destFile);
-                } catch (error) {
-                    console.log(error.message);
-                    console.log(error.stack);
-                    process.exit(1);
-                }
-            });
-        });
-    });
-}
+const extensions = [
+    "js",
+    "jsx",
+    "html",
+    "java",
+    "h",
+    "c",
+    "cpp",
+    "swift",
+    "sass",
+    "css",
+    "png",
+    "jpg"
+]
 
 
-function buildRasterImages(platforms) {
-    var sourceDir = "app/resources/images/";
-    glob(sourceDir + "**/*[.png|.jpg]", function(err, files) {
-        files.forEach(function(sourcePath) {
-            if (sourcePath.indexOf("@") == -1) { //already converted
-                let ext = path.extname(sourcePath).toLowerCase();
-                let destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                let imageName = path.basename(sourcePath, ext);
-                let ratios = PLATFORMS.android.ratios;
-                let callbackCounter = 0;
-
-                sharp(sourcePath).metadata().then((metadata) => {
-                    try {
-                        let originalWidth = metadata.width;
-                        let originalHeight = metadata.height;
-
-                        platforms.forEach(platform => {
-                            for (var i = 0; i < ratios.length; i++) {
-                                (function (m) {
-                                    var factor = m / 4;
-
-                                    if (platform.ratios.indexOf(m) != -1) {
-                                        var dest = platform.mapImagePath(destDir, imageName, ".png", m);
-                                        if (dest == null) {
-                                            return;
-                                        }
-                                        if (!fs.existsSync(path.dirname(dest))) {
-                                            fsExtra.mkdirpSync(path.dirname(dest));
-                                        }
-
-                                        let width = parseInt(originalWidth * factor);
-                                        let height = parseInt(originalHeight * factor);
-
-                                        callbackCounter++;
-                                        sharp(sourcePath)
-                                            .resize(width, height)
-                                            .toFile(dest, (err) => {
-                                                if (err) {
-                                                    console.error("Error resizing image " + sourcePath + " with factor " + factor
-                                                        + "(w=" + (width) + ", h=" + (height) + ")" + err)
-                                                } else {
-                                                    console.log("[SCALED] " + dest + " " + JSON.stringify({
-                                                        width: width,
-                                                        height: height
-                                                    }))
-                                                }
-
-                                                callbackCounter--;
-
-                                                //at the end of all operations
-                                                if (callbackCounter == 0) {
-                                                    if (platform.afterImage) {
-                                                        platform.afterImage(destDir, imageName, ".png");
-                                                    }
-                                                }
-                                            })
-                                    }
-                                })(ratios[i]);
-                            }
-
-
-                        });
-                    } catch (e) {
-                        console.error(e);
-                        console.error(e.stack);
-                    }
-                });
-            }
-        });
-    });
-}
-
-function buildSvgImages(platforms) {
-    var sourceDir = "app/resources/images/";
-    glob(sourceDir + "**/*.svg", function(err, files) {
-        files.forEach(function(sourcePath) {
-            console.log("Working on " + sourcePath);
-            if (sourcePath.indexOf("@") == -1) { //already converted
-                easyimage.info(sourcePath).then(function (info) {
-                    var ext = path.extname(sourcePath).toLowerCase();
-                    var relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    var imageName = path.basename(sourcePath, ext);
-                    var ratios = PLATFORMS.android.ratios;
-                    for (var i = 0; i < ratios.length; i++) {
-                        (function (m) {
-                            var factor = m;
-                            pn.readFile(sourcePath)
-                                .then(buffer => svg2png(buffer, {width: parseInt(info.width * factor), height: parseInt(info.height * factor)}))
-                                .then(buffer => {
-                                    platforms.forEach(platform => {
-                                        if (platform.ratios.indexOf(m) != -1) {
-                                            var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
-                                            if (dest == null) {
-                                                return;
-                                            }
-
-                                            if (!fs.existsSync(path.dirname(dest))) {
-                                                fsExtra.mkdirpSync(path.dirname(dest));
-                                            }
-                                            fs.writeFile(dest, buffer);
-
-                                            console.log(dest + " " + JSON.stringify({
-                                                    width: info.width * factor,
-                                                    height: info.height * factor
-                                                }));
-                                        }
-
-                                        if (platform.afterImage) {
-                                            platform.afterImage(relativeDir, imageName, ".png");
-                                        }
-                                    });
-                                })
-                                .catch(e => { console.log(e.message); console.error(e.stack) });
-                        })(ratios[i]);
-                    }
-
-                });
-            } 
-        });
-    });
-}
-
-function getCombined(combinedList, moduleName) {
-    for (var i = 0; i < combinedList.length; i++) {
-        if (combinedList[i].module == moduleName) {
-            return combinedList[i]
-        }
-    }
-
-    return null;
-}
-
-function combinedNeedsUpdate(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName)
-    if (combined != null) {
-        return combined.dirty
-    } else {
-        return true
-    }
-}
-
-function setCombined(combinedList, moduleName, source) {
-    var combined = getCombined(combinedList, moduleName)
-    if (combined == null) {
-        combined = {module: moduleName}
-        combinedList.push(combined)
-    }
-
-    combined.source = source
-    combined.dirty = false
-}
-
-function validateCombined(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName)
-    if (combined != null) {
-        combined.valid = true;
-    }
-}
-
-var scriptsDir = "app/js/";
-var libsDir = "app/js/libs/";
-function buildScripts(platforms, production, cb) {
+function doUpdate(source, force) {
     platforms.forEach(function (platform) {
         if (platform.combineScripts) {
             if (!platform.combined) {
@@ -218,7 +45,7 @@ function buildScripts(platforms, production, cb) {
         }
     });
 
-    glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
+    glob(sourceDir + "**/*.{" + extensions.join(",") +"}", function (error, files) {
         files.forEach(function (sourceFile) {
             var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
             var scriptName = path.basename(sourceFile);

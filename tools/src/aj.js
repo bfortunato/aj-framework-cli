@@ -3,14 +3,14 @@
 "use strict";
 
 const program = require("commander");
-import { init, build, watch } from "./commands"
+import { init, build, watch, update } from "./commands"
 
 function list(val) {
     return val.split(',');
 }
 
 program
-    .version("aj-framework-cli v1.0.14")
+    .version("aj-framework-cli v1.0.15")
 
 program
     .command("init <path>")
@@ -35,6 +35,14 @@ program
     .description("Starts a watcher for scripts")
     .action(function(options) {
         watch(options.platforms);
+    });
+
+program
+    .command("update")
+    .option("-s, --source <path>", "The path to use to update project framework files")
+    .option("-f, --force", "Do not require confirm for file substitution")
+    .action(function(options) {
+        update(options.source, options.force)
     });
 
 program

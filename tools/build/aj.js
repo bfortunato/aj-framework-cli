@@ -1,18 +1,15 @@
 #!/usr/bin/env node
-
-
 "use strict";
 
 var _commands = require("./commands");
 
 var program = require("commander");
 
-
 function list(val) {
     return val.split(',');
 }
 
-program.version("aj-framework-cli v1.0.14");
+program.version("aj-framework-cli v1.0.15");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
     (0, _commands.init)(path);
@@ -24,6 +21,10 @@ program.command("build").option("-p, --platforms <platforms>", "The platforms yo
 
 program.command("watch").option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list).description("Starts a watcher for scripts").action(function (options) {
     (0, _commands.watch)(options.platforms);
+});
+
+program.command("update").option("-s, --source <path>", "The path to use to update project framework files").option("-f, --force", "Do not require confirm for file substitution").action(function (options) {
+    (0, _commands.update)(options.source, options.force);
 });
 
 program.command("*").action(function () {

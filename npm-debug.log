@@ -1,0 +1,114 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'publish' ]
+2 info using npm@2.15.9
+3 info using node@v4.5.0
+4 verbose publish [ '.' ]
+5 silly cache add args [ '.', null ]
+6 verbose cache add spec .
+7 silly cache add parsed spec Result {
+7 silly cache add   raw: '.',
+7 silly cache add   scope: null,
+7 silly cache add   name: null,
+7 silly cache add   rawSpec: '.',
+7 silly cache add   spec: '/Users/bimbobruno/git/aj-framework-cli',
+7 silly cache add   type: 'directory' }
+8 verbose addLocalDirectory /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package.tgz not in flight; packing
+9 verbose correctMkdir /Users/bimbobruno/.npm correctMkdir not in flight; initializing
+10 verbose tar pack [ '/Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package.tgz',
+10 verbose tar pack   '/Users/bimbobruno/git/aj-framework-cli' ]
+11 verbose tarball /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package.tgz
+12 verbose folder /Users/bimbobruno/git/aj-framework-cli
+13 info prepublish aj-framework-cli@1.0.13
+14 verbose addLocalTarball adding from inside cache /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package.tgz
+15 verbose correctMkdir /Users/bimbobruno/.npm correctMkdir not in flight; initializing
+16 silly cache afterAdd aj-framework-cli@1.0.13
+17 verbose afterAdd /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package/package.json not in flight; writing
+18 verbose correctMkdir /Users/bimbobruno/.npm correctMkdir not in flight; initializing
+19 verbose afterAdd /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package/package.json written
+20 silly publish { private: false,
+20 silly publish   name: 'aj-framework-cli',
+20 silly publish   version: '1.0.13',
+20 silly publish   description: 'AJ: a framework to develop hybrid mobile and web applications',
+20 silly publish   main: 'tools/build/aj.js',
+20 silly publish   bin: { aj: 'tools/build/aj.js' },
+20 silly publish   author: { name: 'Bruno Fortunato', url: 'Applica' },
+20 silly publish   license: 'ISC',
+20 silly publish   dependencies:
+20 silly publish    { 'babel-core': '^6.14.0',
+20 silly publish      'babel-preset-es2015': '^6.14.0',
+20 silly publish      'babel-preset-react': '^6.16.0',
+20 silly publish      commander: '^2.9.0',
+20 silly publish      'fs-extra': '^0.30.0',
+20 silly publish      glob: '^7.1.0',
+20 silly publish      'glob-watcher': '^3.0.0',
+20 silly publish      path: '^0.12.7',
+20 silly publish      'play-sound': '^1.1.1',
+20 silly publish      pn: '^1.0.0',
+20 silly publish      sharp: '^0.16.2',
+20 silly publish      uglifyjs: '^2.4.10' },
+20 silly publish   devDependencies: { 'babel-cli': '^6.14.0' },
+20 silly publish   readme: '# <img src="https://raw.githubusercontent.com/bfortunato/aj-framework/master/doc/images/aj.png" height="100" align="middle" /> Framework\n\nAJ is a simple framework that allows developers to share code in different platforms, such as iOS, Android and Web browsers.\n\nApplications built with AJ are hybrid, written in JS and native code following an unidirectional dataflow architecture, inspired by [Flux](https://facebook.github.io/react/blog/2014/05/06/flux.html) and [Redux](http://redux.js.org). Please take a look to Flux architecture to understand how AJ works.\n\nIn simple terms, application state and business logic is managed in Javascript side. Views are in native side, that is the most productive place to write high-quality user interfaces\n\n```\n     Shareable Javascript Code         Native Code (Mobile, Web)\n│─────────────────────────────────│  │───────────────────────────│\n│  ╔═════════╗       ╔════════╗   │  │    ╔═════════════════╗    │\n│  ║ Actions ║──────>║ Stores ║──────────>║ View Components ║    │\n│  ╚═════════╝       ╚════════╝   │  │    ╚═════════════════╝    │\n│       ^                         │  │             │             │\n│       └──────────────────────────────────────────┘             │\n└─────────────────────────────────┘  └───────────────────────────┘\n```\n\n> As you can see, native code is pure user interface, nothing else, super productive and **best quality**. All business logic is completely reusable, also in web applications.\n\n\nCurrent version: **1.0.2**\n\n\n# Getting Started\nAJ is distributed as an npm package, so, is very simple to install.\n\n1: Type this command to install globally:\n```\nnpm install -g aj-framework-cli\n```\nThis command will install aj command line tools.\n\n2: Check if everything was installed correctly typing:\n```\naj --version\n```\n\n3: Create a new aj project:\n```\naj init myproject\n```\nThis command will create a folder named `./myproject` that contains a bootstrapper project\n\n4: Enter on myproject directory and build\n```\ncd myproject\naj build\n```\nThis command builds images, scripts and assets\n\n5: Watch changes to enable auto-deploy features for development (optional)\n```\naj watch\n```\n\n6: Open and run Applications\n\n## Project Structure\nHere the project structure of AJ bootstrapper\n\n```\n+ myproject               (project root)\n    + app                 (shared area)\n        |- assets\n        |- js\n        |- resources/images\n    + platforms           (native area)\n        |- android\n        |- ios\n        |- web\n```\n\n`app/assets`\nContains application assets. `aj build` command will pack assets in native bundles\n\n`app/js`\nContains ES6/ES7 application scripts. `aj build` command will compile scripts for each platform\n\n`app/resources/images`\nContains image resources. Put images in 4x, `aj build` will crates resolution indipendent versions for each platforms\n\n`platforms/*`\nContains native prjects. Developer can open this projects with native IDE, that are XCode for ios, Android Studio for Android, and your favourite html editor for web. I use IntelliJ.\n\n\n# Usage\nAJ is an unidirectional dataflow framework that allows developers to write reusable Javascript code for build applicaation business logic and specific native code to build user interfaces.\nIn this usage examples, you can take a look on basics in both js and native side.\n\n## Creating actions\nCreate an action calling `aj.createAction` with an identifier and the effective action function\n\n```javascript\nexport function getMessage = aj.createAction(\'GET_MESSAGE\' (data) => {\n    //dispatch actions to stores\n    aj.dispatch({\n        type: \'GET_MESSAGE\',\n        message: "Hello from AJ"\n    }\n} \n```\nActions are simple js functions\n\n## Creating stores\nStores maintains application state. Create a store using `aj.crateStore` with an identifier and reducer function.\n```javascript\n//hello store initial state\nvar initialState = {\n    message: ""\n}\n\nexport let hello = aj.createStore(\'HELLO\' (state = initialState, action) => {\n    switch (action.type) {\n    case: \'GET_MESSAGE\':\n        return Object.assign({}, state, {message: action.message})\n    }\n} \n```\nIf returned state is changed, this will causes an invocation of application state change event.\n\n> Reducers are the only things that can change store states in AJ applications. Please keep state immutable using `Object.assign` or underscore `_.assign` to have more readable code.\n\n\n## Handle application state changes\nNow is the part of the native side that in AJ application architecture is used to build **only** user interfaces.\n\n### iOS\n```swift\nAJ.subscribe(to: Stores.HOME, owner: self) { [weak self] (state) in\n    self?._textView?.text = state.get("message")?.string\n}\n```\n\n### Android\n```java\nAJ.subscribe(Stores.HOME, this, new Store.Subscription() {\n   @Override\n   public void handle(AJObject state) {\n       mTextView.setText(state.get("message").asString());\n   }\n});\n```\n\n### Web\n```javascript\nimport { home } from "stores"\n\nhome.subscribe(state => {\n    document.getElementById("textView").value = state.message\n})\n```\n> Pure javascript is used in this example, but AJ is perfect with ReactJS components. The web project bootstrapper has ReactJS included.\n\n\n## Calling actions\n### iOS\n```swift\nAJ.run(action: "GET_MESSAGE")\n```\n\n### Android\n```java\nAJ.run("GET_MESSAGE")\n```\n\n### Web\n```javascript\nimport { getMessage } from \'./actions\'\n\ngetMessage()\n```\n\n\n# Resources\nAJ Framework manage image sizes, assets and app icon for you.\n\n### Images\nPut images in `app/resources/images` in x4 size. AJ framework will build they for iOS, Android and Web for multiple screen support (@1x @2x @3x for iOS, ldpi mdpi hdpi, xhdpi, xxdhpi, xxxhdpi for Android, 1x for web)\n\n### Assets\nPut assets in `app/assets`. AJ framework will copy all assets in platform specific directory. \n\n### App Icon\nPut your app icon in `app/resources/app_icon.png`. Like images, AJ framework will generate optimized versions of all platforms. In case of web application, favicon.png will be generated.\n\n\n# Documentation \n\n- [Installation](https://github.com/bfortunato/aj-framework/blob/master/doc/installation.md)\n- [aj: command line interface](https://github.com/bfortunato/aj-framework/blob/master/doc/cli.md)\n- [API](https://github.com/bfortunato/aj-framework/blob/master/doc/api.md)\n    - [Native API](https://github.com/bfortunato/aj-framework/blob/master/doc/api_native.md)\n    - [Flux](https://github.com/bfortunato/aj-framework/blob/master/doc/api_flux.md)\n    - [Assets](https://github.com/bfortunato/aj-framework/blob/master/doc/api_assets.md)\n    - [Storage](https://github.com/bfortunato/aj-framework/blob/master/doc/api_storage.md)\n    - [HTTP](https://github.com/bfortunato/aj-framework/blob/master/doc/api_http.md)\n- [Plugins](https://github.com/bfortunato/aj-framework/blob/master/doc/plugins.md)\n- [Debugging](https://github.com/bfortunato/aj-framework/blob/master/doc/debugging.md)\n\n\n# Tutorials\n[TodoList](https://github.com/bfortunato/aj-framework-todolist)\n\n\n# License\nAJ framework is under [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0)\n\n\n# Colophon\nAJ Framework was developed by Bruno Fortunato, CTO at [Applica](http://www.applica.guru) and is completely free and open source.\n\nFor support, questions and anything else, please contact me at [bruno.fortunato@applica.guru](mailto:bruno.fortunato@applica.guru)\n',
+20 silly publish   readmeFilename: 'README.md',
+20 silly publish   gitHead: '4f38310ee0733336619f4215641efbaae99864c2',
+20 silly publish   _id: 'aj-framework-cli@1.0.13',
+20 silly publish   scripts: {},
+20 silly publish   _shasum: 'a068b163fdef5deb83fcd6e33e1df6191930850f',
+20 silly publish   _from: '.' }
+21 verbose getPublishConfig undefined
+22 silly mapToRegistry name aj-framework-cli
+23 silly mapToRegistry using default registry
+24 silly mapToRegistry registry https://registry.npmjs.org/
+25 silly mapToRegistry data Result {
+25 silly mapToRegistry   raw: 'aj-framework-cli',
+25 silly mapToRegistry   scope: null,
+25 silly mapToRegistry   name: 'aj-framework-cli',
+25 silly mapToRegistry   rawSpec: '',
+25 silly mapToRegistry   spec: 'latest',
+25 silly mapToRegistry   type: 'tag' }
+26 silly mapToRegistry uri https://registry.npmjs.org/aj-framework-cli
+27 verbose publish registryBase https://registry.npmjs.org/
+28 silly publish uploading /Users/bimbobruno/.npm/aj-framework-cli/1.0.13/package.tgz
+29 verbose request uri https://registry.npmjs.org/aj-framework-cli
+30 verbose request sending authorization for write operation
+31 info attempt registry request try #1 at 5:55:19 PM
+32 verbose request using bearer token for auth
+33 verbose request id 5e33fd1aed87ef8b
+34 http request PUT https://registry.npmjs.org/aj-framework-cli
+35 http 403 https://registry.npmjs.org/aj-framework-cli
+36 verbose headers { 'content-type': 'application/json',
+36 verbose headers   'cache-control': 'max-age=300',
+36 verbose headers   'content-length': '96',
+36 verbose headers   'accept-ranges': 'bytes',
+36 verbose headers   date: 'Fri, 23 Dec 2016 16:55:21 GMT',
+36 verbose headers   via: '1.1 varnish',
+36 verbose headers   connection: 'keep-alive',
+36 verbose headers   'x-served-by': 'cache-ams4124-AMS',
+36 verbose headers   'x-cache': 'MISS',
+36 verbose headers   'x-cache-hits': '0',
+36 verbose headers   'x-timer': 'S1482512120.016440,VS0,VE1528',
+36 verbose headers   vary: 'Accept-Encoding' }
+37 verbose request invalidating /Users/bimbobruno/.npm/registry.npmjs.org/aj-framework-cli on PUT
+38 error publish Failed PUT 403
+39 verbose stack Error: "You cannot publish over the previously published version 1.0.13." : aj-framework-cli
+39 verbose stack     at makeError (/usr/local/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:264:12)
+39 verbose stack     at CachingRegistryClient.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:252:14)
+39 verbose stack     at Request._callback (/usr/local/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:172:14)
+39 verbose stack     at Request.self.callback (/usr/local/lib/node_modules/npm/node_modules/request/request.js:200:22)
+39 verbose stack     at emitTwo (events.js:87:13)
+39 verbose stack     at Request.emit (events.js:172:7)
+39 verbose stack     at Request.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/request/request.js:1067:10)
+39 verbose stack     at emitOne (events.js:82:20)
+39 verbose stack     at Request.emit (events.js:169:7)
+39 verbose stack     at IncomingMessage.<anonymous> (/usr/local/lib/node_modules/npm/node_modules/request/request.js:988:12)
+40 verbose statusCode 403
+41 verbose pkgid aj-framework-cli
+42 verbose cwd /Users/bimbobruno/git/aj-framework-cli
+43 error Darwin 16.1.0
+44 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "publish"
+45 error node v4.5.0
+46 error npm  v2.15.9
+47 error code E403
+48 error "You cannot publish over the previously published version 1.0.13." : aj-framework-cli
+49 error If you need help, you may report this error at:
+49 error     <https://github.com/npm/npm/issues>
+50 verbose exit [ 1, true ]
