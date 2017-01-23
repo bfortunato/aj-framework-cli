@@ -23,8 +23,8 @@ program.command("watch").option("-p, --platforms <platforms>", "The platforms yo
     (0, _commands.watch)(options.platforms);
 });
 
-program.command("update").option("-s, --source <path>", "The path to use to update project framework files").option("-f, --force", "Do not require confirm for file substitution").action(function (options) {
-    (0, _commands.update)(options.source, options.force);
+program.command("update").option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list).option("-s, --sourceDir <path>", "The path to use to update project framework files").option("-f, --force", "Do not require confirm for file substitution").action(function (options) {
+    (0, _commands.update)(options.platforms, options.sourceDir, options.force);
 });
 
 program.command("*").action(function () {

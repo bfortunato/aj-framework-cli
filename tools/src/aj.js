@@ -39,10 +39,11 @@ program
 
 program
     .command("update")
-    .option("-s, --source <path>", "The path to use to update project framework files")
+    .option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list)
+    .option("-s, --sourceDir <path>", "The path to use to update project framework files")
     .option("-f, --force", "Do not require confirm for file substitution")
     .action(function(options) {
-        update(options.source, options.force)
+        update(options.platforms, options.sourceDir, options.force)
     });
 
 program

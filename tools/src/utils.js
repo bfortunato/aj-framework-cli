@@ -2,9 +2,13 @@
 
 const fs = require("fs");
 
-exports.isApp = function() {
+exports.isApp = function(sourceDir = "") {
     try {
-        fs.statSync(".ajapp");
+        if (sourceDir) {
+            fs.statSync(sourceDir + "/" + ".ajapp");
+        } else {
+            fs.statSync(".ajapp");
+        }
         return true;
     } catch (e) {
         return false;
