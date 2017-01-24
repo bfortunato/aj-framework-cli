@@ -10,7 +10,7 @@ function list(val) {
 }
 
 program
-    .version("aj-framework-cli v1.0.15")
+    .version("aj-framework-cli v1.0.16")
 
 program
     .command("init <path>")
@@ -39,11 +39,12 @@ program
 
 program
     .command("update")
-    .option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list)
-    .option("-s, --sourceDir <path>", "The path to use to update project framework files")
+    .option("-s, --source-dir <path>", "The path to use to update project framework files")
+    .option("-a, --ignore-added", "Ignore added files. Works only on changes")
+    .option("-n, --no-changes", "Do not change any file. Just a simulation")
     .option("-f, --force", "Do not require confirm for file substitution")
     .action(function(options) {
-        update(options.platforms, options.sourceDir, options.force)
+        update(options.sourceDir, options.ignoreAdded, options.noChanges, options.force)
     });
 
 program

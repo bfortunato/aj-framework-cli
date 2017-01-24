@@ -1,8 +1,9 @@
 {
   "private": false,
   "name": "aj-framework-cli",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "AJ: a framework to develop hybrid mobile and web applications",
+  "repository": "http://www.applica.guru",
   "main": "tools/build/aj.js",
   "bin": {
     "aj": "tools/build/aj.js"

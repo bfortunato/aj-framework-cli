@@ -9,7 +9,7 @@ function list(val) {
     return val.split(',');
 }
 
-program.version("aj-framework-cli v1.0.15");
+program.version("aj-framework-cli v1.0.16");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
     (0, _commands.init)(path);
@@ -23,8 +23,8 @@ program.command("watch").option("-p, --platforms <platforms>", "The platforms yo
     (0, _commands.watch)(options.platforms);
 });
 
-program.command("update").option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list).option("-s, --sourceDir <path>", "The path to use to update project framework files").option("-f, --force", "Do not require confirm for file substitution").action(function (options) {
-    (0, _commands.update)(options.platforms, options.sourceDir, options.force);
+program.command("update").option("-s, --source-dir <path>", "The path to use to update project framework files").option("-a, --ignore-added", "Ignore added files. Works only on changes").option("-n, --no-changes", "Do not change any file. Just a simulation").option("-f, --force", "Do not require confirm for file substitution").action(function (options) {
+    (0, _commands.update)(options.sourceDir, options.ignoreAdded, options.noChanges, options.force);
 });
 
 program.command("*").action(function () {
