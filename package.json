@@ -1,7 +1,7 @@
 {
   "private": false,
   "name": "aj-framework-cli",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "AJ: a framework to develop hybrid mobile and web applications",
   "repository": "http://www.applica.guru",
   "main": "tools/build/aj.js",
@@ -26,6 +26,7 @@
     "pn": "^1.0.0",
     "readline-sync": "^1.4.5",
     "sharp": "^0.16.2",
+    "tmp": "0.0.31",
     "uglifyjs": "^2.4.10"
   },
   "devDependencies": {
