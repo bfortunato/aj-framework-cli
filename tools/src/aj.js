@@ -10,7 +10,7 @@ function list(val) {
 }
 
 program
-    .version("aj-framework-cli v1.0.19")
+    .version("aj-framework-cli v1.0.20")
 
 program
     .command("init <path>")
@@ -18,7 +18,7 @@ program
     .action(function(path) {
         init(path);
     });
-npm
+
 program
     .command("build")
     .option("-p, --platforms <platforms>", "The platforms you want to build, comma separated (all, ios, android, node, web), default all", list)
