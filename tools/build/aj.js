@@ -1,15 +1,18 @@
 #!/usr/bin/env node
+
+
 "use strict";
 
 var _commands = require("./commands");
 
 var program = require("commander");
 
+
 function list(val) {
     return val.split(',');
 }
 
-program.version("aj-framework-cli v1.0.16");
+program.version("aj-framework-cli v1.0.18");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
     (0, _commands.init)(path);
