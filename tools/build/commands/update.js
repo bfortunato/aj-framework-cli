@@ -11,8 +11,7 @@ var readline = require('readline-sync');
 var chalk = require("chalk");
 var isbinaryfile = require("isbinaryfile");
 var exec = require("child_process").exec;
-
-var TMP_DIR = "__aj_update";
+var tmp = require("tmp");
 
 Array.prototype.contains = function (el) {
     return this.indexOf(el) != -1;
@@ -21,17 +20,19 @@ Array.prototype.contains = function (el) {
 function getFromGitHub(cb) {
     console.log("Downloading updated files...");
 
-    exec("git clone https://github.com/bfortunato/aj-framework " + TMP_DIR, function (error, stdout, stderr) {
+    var tmpDir = tmp.dirSync({ prefix: "aj_" }).name;
+
+    exec("git clone https://github.com/bfortunato/aj-framework " + tmpDir, function (error, stdout, stderr) {
         console.log(stdout);
 
         if (error) {
             console.error(stderr);
         } else {
-            fs.closeSync(fs.openSync(path + "/.ajapp", 'w'));
-            fsExtra.removeSync(path + "/.git");
+            fs.closeSync(fs.openSync(tmpDir + "/.ajapp", 'w'));
+            fsExtra.removeSync(tmpDir + "/.git");
             console.log("Updated files downloaded!");
 
-            cb(TMP_DIR);
+            cb(tmpDir);
         }
     });
 }
@@ -58,20 +59,22 @@ function copy(sourceFile, destDir, destFile) {
     fsExtra.copySync(sourceFile, destFile);
 }
 
-function doUpdate(sourceDir, ignoreAdded, simulate, force) {
+function doUpdate(sourceDir, ignoreAdded, simulate, force, cb) {
     if (!utils.isApp(sourceDir)) {
         console.error("Source dir must be an AJ project");
         process.exit(1);
         return;
     }
 
-    console.log("Scanning source dir " + sourceDir);
+    function relative(path) {
+        return "<tmp>" + path.replace(sourceDir, "");
+    }
 
     glob(sourceDir + "/**/*.*", {
         ignore: [sourceDir + "/**/node_modules/**", sourceDir + "/**/build/**"]
     }, function (error, files) {
         files.forEach(function (sourceFile) {
-            console.log("Working on " + sourceFile);
+            console.log("Working on " + relative(sourceFile));
 
             var relativeDir = path.dirname(sourceFile.replace(sourceDir, ""));
             var fileName = path.basename(sourceFile);
@@ -108,7 +111,7 @@ function doUpdate(sourceDir, ignoreAdded, simulate, force) {
                             }
 
                             if (isDifferent) {
-                                console.log("Differences between " + sourceFile + " and " + destFile + ":");
+                                console.log("Differences between " + relative(sourceFile) + " and " + destFile + ":");
 
                                 diffResult.forEach(function (part) {
                                     if (part.added) {
@@ -146,6 +149,10 @@ function doUpdate(sourceDir, ignoreAdded, simulate, force) {
                 console.log(error.stack);
             }
         });
+
+        if (cb) {
+            cb();
+        }
     });
 };
 
@@ -157,7 +164,10 @@ module.exports = function update(sourceDir, ignoreAdded, simulate, force) {
 
     if (!sourceDir) {
         getFromGitHub(function (dir) {
-            doUpdate(dir, ignoreAdded, simulate, force);
+            doUpdate(dir, ignoreAdded, simulate, force, function () {
+                console.log("Cleaning up... " + dir);
+                fsExtra.remove(dir);
+            });
         });
     } else {
         doUpdate(sourceDir, ignoreAdded, simulate, force);
