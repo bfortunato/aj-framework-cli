@@ -310,8 +310,9 @@ function buildScripts(platforms, production, cb) {
                 var code = "";
 
                 platform.combined.forEach(function (c) {
+                    let definePath =  c.module.replace(/\\/g, "/")
                     if (c.valid) {
-                        code += ("define('" + c.module + "', function(module, exports) {\n" +
+                        code += ("define('" + definePath + "', function(module, exports) {\n" +
                                     c.source + "\n" +
                                  "});\n")
                     }
