@@ -22,6 +22,7 @@ for (var k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
 
+
 var scriptsDir = "app/js/";
 
 function log(msg) {
@@ -40,9 +41,15 @@ function notify(type) {
 }
 
 function transpile(sourceFile, platforms) {
-    var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-    var scriptName = path.basename(sourceFile);
-    var moduleName = path.join(relativeDir, scriptName);
+    console.log("before");
+    console.log(sourceFile);
+    sourceFile = sourceFile.replace(/\\/g, "/");
+    console.log("after");
+    console.log(sourceFile);
+
+    var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
+    var scriptName = path.posix.basename(sourceFile);
+    var moduleName = path.posix.join(relativeDir, scriptName);
     moduleName = moduleName.replace(".jsx", ".js");
 
     function getCombined(combinedList, moduleName) {
@@ -85,8 +92,8 @@ function transpile(sourceFile, platforms) {
                     }
                 } else {
                     var jsDir = platform.mapAssetPath("js");
-                    var destDir = path.join(jsDir, relativeDir);
-                    var destFile = path.join(destDir, scriptName);
+                    var destDir = path.posix.join(jsDir, relativeDir);
+                    var destFile = path.posix.join(destDir, scriptName);
                     destFile = destFile.replace(".jsx", ".js");
                     try {
                         fsExtra.mkdirpSync(destDir);

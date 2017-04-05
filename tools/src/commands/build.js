@@ -220,15 +220,17 @@ function buildScripts(platforms, production, cb) {
 
     glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
         files.forEach(function (sourceFile) {
-            var relativeDir = path.dirname(sourceFile.replace(scriptsDir, ""));
-            var scriptName = path.basename(sourceFile);
-            var moduleName = path.join(relativeDir, scriptName);
+            sourceFile = sourceFile.replace(/\\/g, "/")
+
+            var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
+            var scriptName = path.posix.basename(sourceFile);
+            var moduleName = path.posix.join(relativeDir, scriptName);
 
             if (sourceFile.indexOf(libsDir) != -1) {
                 platforms.forEach(function (platform) {
                     var jsDir = platform.mapAssetPath("js");
-                    var destDir = path.join(jsDir, relativeDir);
-                    var destFile = path.join(destDir, scriptName);
+                    var destDir = path.posix.join(jsDir, relativeDir);
+                    var destFile = path.posix.join(destDir, scriptName);
                     try {
                         if (platform.combineScripts) {
                             if (combinedNeedsUpdate(platform.combined, moduleName)) {
@@ -265,8 +267,8 @@ function buildScripts(platforms, production, cb) {
 
             platforms.forEach(function (platform) {
                 var jsDir = platform.mapAssetPath("js");
-                var destDir = path.join(jsDir, relativeDir);
-                var destFile = path.join(destDir, scriptName);
+                var destDir = path.posix.join(jsDir, relativeDir);
+                var destFile = path.posix.join(destDir, scriptName);
                 destFile = destFile.replace(".jsx", ".js");
                 try {
                     if (platform.combineScripts) {
@@ -305,7 +307,7 @@ function buildScripts(platforms, production, cb) {
             if (platform.combineScripts) {
                 var jsDir = platform.mapAssetPath("js");
                 var destDir = jsDir;
-                var destFile = path.join(destDir, "app.js");
+                var destFile = path.posix.join(destDir, "app.js");
 
                 var code = "";
 
