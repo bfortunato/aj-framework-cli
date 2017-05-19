@@ -9,7 +9,7 @@ const pn = require("pn/fs");
 const sharp = require("sharp");
 
 const utils = require("../utils");
-const uglifyjs = require("uglifyjs")
+const uglifyjs = require("uglify-js");
 
 import * as PLATFORMS from "../platforms"
 const ALL_PLATFORMS = [];
@@ -285,7 +285,7 @@ function buildScripts(platforms, production, cb) {
                         fsExtra.mkdirpSync(destDir);
 
                         if (production) {
-                            let uglified = uglifyjs.minify(getResult().code, {fromString: true})
+                            let uglified = uglifyjs.minify(getResult().code)
 
                             fs.writeFileSync(destFile, uglified.code);
 
@@ -326,7 +326,8 @@ function buildScripts(platforms, production, cb) {
                 fsExtra.mkdirpSync(destDir);
 
                 if (production) {
-                    let result = uglifyjs.minify(code, {fromString: true})
+                    let result = uglifyjs.minify(code)
+
                     fs.writeFileSync(destFile, result.code);
 
                     console.log("[WRITTEN.MIN] " + destFile);
@@ -548,6 +549,10 @@ module.exports = function build(_platforms, types, production, scriptsCb) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;
+    }
+
+    if (production) {
+        console.log("*** PRODUCTION MODE ***");
     }
 
     let selectedPlatforms = [];
