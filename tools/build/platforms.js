@@ -264,8 +264,8 @@ var ios = exports.ios = {
                 width = _image$size$split2[0],
                 height = _image$size$split2[1];
 
-            width = parseInt(width);
-            height = parseInt(height);
+            width = parseFloat(width);
+            height = parseFloat(height);
             var scale = parseInt(image.scale);
             width *= scale;
             height *= scale;

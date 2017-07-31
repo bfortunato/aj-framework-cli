@@ -280,8 +280,8 @@ export const ios = {
 
         contentsJson.images.forEach(image => {
             let [width, height] = image.size.split("x");
-            width = parseInt(width);
-            height = parseInt(height);
+            width = parseFloat(width);
+            height = parseFloat(height);
             let scale = parseInt(image.scale);
             width *= scale;
             height *= scale;
