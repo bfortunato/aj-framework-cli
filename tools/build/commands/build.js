@@ -12,8 +12,6 @@ var PLATFORMS = _interopRequireWildcard(_platforms2);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
 var babel = require("babel-core");
 var glob = require("glob");
 var path = require("path");
@@ -63,77 +61,64 @@ function buildRasterImages(platforms) {
     glob(sourceDir + "**/*[.png|.jpg]", function (err, files) {
         files.forEach(function (sourcePath) {
             if (sourcePath.indexOf("@") == -1) {
-                (function () {
-                    //already converted
-                    var ext = path.extname(sourcePath).toLowerCase();
-                    var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    var imageName = path.basename(sourcePath, ext);
-                    var ratios = PLATFORMS.android.ratios;
-                    var callbackCounter = 0;
+                //already converted
+                var ext = path.extname(sourcePath).toLowerCase();
+                var destDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
+                var imageName = path.basename(sourcePath, ext);
+                var ratios = PLATFORMS.android.ratios;
+                var callbackCounter = 0;
 
-                    sharp(sourcePath).metadata().then(function (metadata) {
-                        try {
-                            (function () {
-                                var originalWidth = metadata.width;
-                                var originalHeight = metadata.height;
+                sharp(sourcePath).metadata().then(function (metadata) {
+                    try {
+                        var originalWidth = metadata.width;
+                        var originalHeight = metadata.height;
 
-                                platforms.forEach(function (platform) {
-                                    for (var i = 0; i < ratios.length; i++) {
-                                        (function (m) {
-                                            var factor = m / 4;
+                        platforms.forEach(function (platform) {
+                            for (var i = 0; i < ratios.length; i++) {
+                                (function (m) {
+                                    var factor = m / 4;
 
-                                            if (platform.ratios.indexOf(m) != -1) {
-                                                var dest;
+                                    if (platform.ratios.indexOf(m) != -1) {
+                                        var dest = platform.mapImagePath(destDir, imageName, ".png", m);
+                                        if (dest == null) {
+                                            return;
+                                        }
+                                        if (!fs.existsSync(path.dirname(dest))) {
+                                            fsExtra.mkdirpSync(path.dirname(dest));
+                                        }
 
-                                                var _ret3 = (function () {
-                                                    dest = platform.mapImagePath(destDir, imageName, ".png", m);
+                                        var width = parseInt(originalWidth * factor);
+                                        var height = parseInt(originalHeight * factor);
 
-                                                    if (dest == null) {
-                                                        return {
-                                                            v: undefined
-                                                        };
-                                                    }
-                                                    if (!fs.existsSync(path.dirname(dest))) {
-                                                        fsExtra.mkdirpSync(path.dirname(dest));
-                                                    }
-
-                                                    var width = parseInt(originalWidth * factor);
-                                                    var height = parseInt(originalHeight * factor);
-
-                                                    callbackCounter++;
-                                                    sharp(sourcePath).resize(width, height).toFile(dest, function (err) {
-                                                        if (err) {
-                                                            console.error("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + width + ", h=" + height + ")" + err);
-                                                        } else {
-                                                            console.log("[SCALED] " + dest + " " + JSON.stringify({
-                                                                width: width,
-                                                                height: height
-                                                            }));
-                                                        }
-
-                                                        callbackCounter--;
-
-                                                        //at the end of all operations
-                                                        if (callbackCounter == 0) {
-                                                            if (platform.afterImage) {
-                                                                platform.afterImage(destDir, imageName, ".png");
-                                                            }
-                                                        }
-                                                    });
-                                                })();
-
-                                                if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
+                                        callbackCounter++;
+                                        sharp(sourcePath).resize(width, height).toFile(dest, function (err) {
+                                            if (err) {
+                                                console.error("Error resizing image " + sourcePath + " with factor " + factor + "(w=" + width + ", h=" + height + ")" + err);
+                                            } else {
+                                                console.log("[SCALED] " + dest + " " + JSON.stringify({
+                                                    width: width,
+                                                    height: height
+                                                }));
                                             }
-                                        })(ratios[i]);
+
+                                            callbackCounter--;
+
+                                            //at the end of all operations
+                                            if (callbackCounter == 0) {
+                                                if (platform.afterImage) {
+                                                    platform.afterImage(destDir, imageName, ".png");
+                                                }
+                                            }
+                                        });
                                     }
-                                });
-                            })();
-                        } catch (e) {
-                            console.error(e);
-                            console.error(e.stack);
-                        }
-                    });
-                })();
+                                })(ratios[i]);
+                            }
+                        });
+                    } catch (e) {
+                        console.error(e);
+                        console.error(e.stack);
+                    }
+                });
             }
         });
     });

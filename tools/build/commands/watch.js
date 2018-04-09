@@ -22,6 +22,7 @@ for (var k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
 
+
 var scriptsDir = "app/js/";
 
 function log(msg) {
@@ -40,11 +41,7 @@ function notify(type) {
 }
 
 function transpile(sourceFile, platforms) {
-    console.log("before");
-    console.log(sourceFile);
     sourceFile = sourceFile.replace(/\\/g, "/");
-    console.log("after");
-    console.log(sourceFile);
 
     var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
     var scriptName = path.posix.basename(sourceFile);

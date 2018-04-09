@@ -325,6 +325,17 @@ export const node = {
     ratios: [0.75, 1, 1.5, 2, 3, 4]
 };
 
+export const react = {
+    name: "node",
+    mapAssetPath: function(path) {
+        return "platforms/react/assets/" + path;
+    },
+    mapImagePath: function(dir, name, extension, ratio) {
+        return ("platforms/react/assets/images/" + name + "@" + parseInt(ratio) + "x" + extension).replace("@1x", "");
+    },
+    ratios: [1, 2, 3, 4]
+};
+
 export const web = {
     name: "web",
     combineScripts: true,
