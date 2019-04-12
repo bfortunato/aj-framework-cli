@@ -3,8 +3,10 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+exports.buildScripts = buildScripts;
 exports.generateActions = generateActions;
 exports.generateStores = generateStores;
+exports.default = build;
 
 var _platforms2 = require("../platforms");
 
@@ -19,9 +21,15 @@ var fs = require("fs");
 var fsExtra = require("fs-extra");
 var pn = require("pn/fs");
 var sharp = require("sharp");
-
+var sourcemaps = require("gulp-sourcemaps");
+var source = require("vinyl-source-stream");
+var buffer = require("vinyl-buffer");
+var browserify = require("browserify");
+var watchify = require("watchify");
+var babelify = require("babelify");
 var utils = require("../utils");
 var uglifyjs = require("uglify-js");
+var vfs = require('vinyl-fs');
 
 var ALL_PLATFORMS = [];
 for (var k in PLATFORMS) {
@@ -212,145 +220,76 @@ function validateCombined(combinedList, moduleName) {
     }
 }
 
-var scriptsDir = "app/js/";
-var libsDir = "app/js/libs/";
+function timestamp() {
+    var date = new Date();
+
+    var hour = date.getHours();
+    var min = date.getMinutes();
+    var sec = date.getSeconds();
+    var millis = date.getMilliseconds();
+
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    sec = (sec < 10 ? "0" : "") + sec;
+
+    ///let str = hour + ":" + min + ":" + sec + "." + millis;
+    var str = hour + ":" + min + ":" + sec;
+
+    return str;
+}
+
 function buildScripts(platforms, production, cb) {
-    platforms.forEach(function (platform) {
-        if (platform.combineScripts) {
-            if (!platform.combined) {
-                platform.combined = [];
-            } else {
-                platform.combined.forEach(function (c) {
-                    return c.valid = false;
-                });
-            }
-        }
-    });
+    var watch = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
-        files.forEach(function (sourceFile) {
-            sourceFile = sourceFile.replace(/\\/g, "/");
+    var scriptsDir = "./app/js/";
+    var entryPoint = scriptsDir + "app.js";
 
-            var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
-            var scriptName = path.posix.basename(sourceFile);
-            var moduleName = path.posix.join(relativeDir, scriptName);
+    var bundler = browserify(entryPoint, { debug: true, cache: {}, packageCache: {}, extensions: [".js", ".jsx"] }).transform(babelify, { presets: [require.resolve("@babel/preset-env"), require.resolve("@babel/preset-react")] });
 
-            if (sourceFile.indexOf(libsDir) != -1) {
-                platforms.forEach(function (platform) {
-                    var jsDir = platform.mapAssetPath("js");
-                    var destDir = path.posix.join(jsDir, relativeDir);
-                    var destFile = path.posix.join(destDir, scriptName);
-                    try {
-                        if (platform.combineScripts) {
-                            if (combinedNeedsUpdate(platform.combined, moduleName)) {
-                                var source = fs.readFileSync(sourceFile);
-                                setCombined(platform.combined, moduleName, source);
+    if (watch) {
+        bundler = watchify(bundler);
+    }
 
-                                console.log("[COMBINELIB] " + moduleName);
-                            } else {
-                                console.log("[CACHEDLIB] " + moduleName);
-                            }
-                            validateCombined(platform.combined, moduleName);
-                        } else {
-                            fsExtra.copySync(sourceFile, destFile);
-                            console.log("[COPIED] " + sourceFile + " == " + destFile);
-                        }
-                    } catch (error) {
-                        console.log(error.message);
-                        console.log(error.stack);
-                        process.exit(1);
-                    }
-                });
-                return;
-            }
+    function rebundle() {
+        console.log("[" + timestamp() + "] " + "Bundling " + entryPoint + "...");
 
-            moduleName = moduleName.replace(".jsx", ".js");
-            var result = null;
-            function getResult() {
-                if (result == null) {
-                    result = babel.transformFileSync(sourceFile, { presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve) });
-                }
-
-                return result;
-            }
+        var pipeline = bundler.bundle().pipe(source(entryPoint)).pipe(buffer()).pipe(sourcemaps.init({ loadMaps: true })).pipe(sourcemaps.write("./source_maps", { sourceMappingURL: function sourceMappingURL(file) {
+                return "app.js.map";
+            } })).pipe(vfs.dest("./build")).on("error", function (err) {
+            console.error(err);
+            this.emit("end");
+        }).on("finish", function () {
+            var sourceFile = "./build/app/js/app.js";
+            var sourceMapFile = "./build/source_maps/app/js/app.js.map";
 
             platforms.forEach(function (platform) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = path.posix.join(jsDir, relativeDir);
-                var destFile = path.posix.join(destDir, scriptName);
-                destFile = destFile.replace(".jsx", ".js");
+                var destDir = platform.mapAssetPath("js");
+                var destFile = path.posix.join(destDir, "app.js");
+                var destMapFile = path.posix.join(destDir, "app.js.map");
                 try {
-                    if (platform.combineScripts) {
-                        if (combinedNeedsUpdate(platform.combined, moduleName)) {
-                            setCombined(platform.combined, moduleName, getResult().code);
+                    fsExtra.copySync(sourceFile, destFile);
+                    console.log("[COPIED] " + sourceFile + " == " + destFile);
 
-                            console.log("[COMBINED] " + moduleName);
-                        } else {
-                            console.log("[CACHED] " + moduleName);
-                        }
-
-                        validateCombined(platform.combined, moduleName);
-                    } else {
-                        fsExtra.mkdirpSync(destDir);
-
-                        if (production) {
-                            var uglified = uglifyjs.minify(getResult().code);
-
-                            fs.writeFileSync(destFile, uglified.code);
-
-                            console.log("[COMPILED.MIN] " + sourceFile + " == " + destFile);
-                        } else {
-                            fs.writeFileSync(destFile, getResult().code);
-                            console.log("[COMPILED] " + sourceFile + " => " + destFile);
-                        }
-                    }
+                    fsExtra.copySync(sourceMapFile, destMapFile);
+                    console.log("[COPIED] " + sourceMapFile + " == " + destMapFile);
                 } catch (error) {
                     console.log(error.message);
                     console.log(error.stack);
                     process.exit(1);
                 }
             });
+            console.log("[" + timestamp() + "] " + "READY!");
         });
+    }
 
-        platforms.forEach(function (platform) {
-            if (platform.combineScripts) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = jsDir;
-                var destFile = path.posix.join(destDir, "app.js");
-
-                var code = "";
-
-                platform.combined.forEach(function (c) {
-                    var definePath = c.module.replace(/\\/g, "/");
-                    if (c.valid) {
-                        code += "define('" + definePath + "', function(module, exports) {\n" + c.source + "\n" + "});\n";
-                    }
-                });
-
-                code += "\nrequire('./aj').createRuntime();";
-                code += "\nrequire('./main').main();";
-
-                fsExtra.mkdirpSync(destDir);
-
-                if (production) {
-                    var result = uglifyjs.minify(code);
-
-                    fs.writeFileSync(destFile, result.code);
-
-                    console.log("[WRITTEN.MIN] " + destFile);
-                } else {
-                    fs.writeFileSync(destFile, code);
-
-                    console.log("[WRITTEN] " + destFile);
-                }
-            }
+    if (watch) {
+        bundler.on("update", function () {
+            rebundle();
         });
+    }
 
-        if (cb) {
-            cb();
-        }
-    });
-};
+    rebundle();
+}
 
 function buildAppIcon(platforms) {
     var appIcon = "app/resources/app_icon.png";
@@ -381,10 +320,10 @@ function findAndroidPackage(codeBase) {
 
     var files = glob.sync(codeBase + "/**/Actions.java");
     if (files && files.length > 0) {
-        var source = fs.readFileSync(files[0], "UTF8");
-        if (source) {
+        var _source = fs.readFileSync(files[0], "UTF8");
+        if (_source) {
             var reg = /package ([^;]+)/g;
-            var matches = reg.exec(source);
+            var matches = reg.exec(_source);
             if (matches && matches.length > 0) {
                 result.pkg = matches[1];
                 result.success = true;
@@ -512,7 +451,7 @@ function buildDefinitions(platforms) {
     });
 }
 
-module.exports = function build(_platforms, types, production, scriptsCb) {
+function build(_platforms, types, production, scriptsCb) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;

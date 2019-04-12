@@ -6,7 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const player = require("play-sound")();
-
+const {buildScripts} = require("./build");
 const utils = require("../utils");
 
 import * as PLATFORMS from "../platforms"
@@ -128,15 +128,7 @@ function watchScripts(_platforms) {
         })
     }
 
-    var watcher = watch(scriptsDir + "**/*.{js,jsx}");
-
-    watcher.on("add", function(path) {
-         transpile(path, selectedPlatforms);
-    });
-
-    watcher.on("change", function(path) {
-        transpile(path, selectedPlatforms);
-    });
+    buildScripts(selectedPlatforms, false, null, true);
 }
 
 module.exports = function watch(platforms) {

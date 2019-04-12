@@ -1,5 +1,3 @@
-"use strict";
-
 const babel = require("babel-core");
 const glob = require("glob");
 const path = require("path");
@@ -7,13 +5,19 @@ const fs = require("fs");
 const fsExtra = require("fs-extra");
 const pn = require("pn/fs");
 const sharp = require("sharp");
-
+const sourcemaps = require("gulp-sourcemaps");
+const source = require("vinyl-source-stream");
+const buffer = require("vinyl-buffer");
+const browserify = require("browserify");
+const watchify = require("watchify");
+const babelify = require("babelify");
 const utils = require("../utils");
 const uglifyjs = require("uglify-js");
+const vfs = require('vinyl-fs');
 
 import * as PLATFORMS from "../platforms"
 const ALL_PLATFORMS = [];
-for (var k in PLATFORMS) {
+for (let k in PLATFORMS) {
     ALL_PLATFORMS.push(PLATFORMS[k]);
 }
 
@@ -22,15 +26,15 @@ Array.prototype.contains = function(el) {
 };
 
 function buildAssets(platforms) {
-    var assetsDir = "app/assets/";
+    let assetsDir = "app/assets/";
     glob(assetsDir + "**/*", function(error, files) {
         files.forEach(function(sourceFile) {
-            var relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
-            var fileName = path.basename(sourceFile);
+            let relativeDir = path.dirname(sourceFile.replace(assetsDir, ""));
+            let fileName = path.basename(sourceFile);
             platforms.forEach(function(platform) {
-                var platformDir = platform.mapAssetPath("");
-                var destDir = path.join(platformDir, relativeDir);
-                var destFile = path.join(destDir, fileName);
+                let platformDir = platform.mapAssetPath("");
+                let destDir = path.join(platformDir, relativeDir);
+                let destFile = path.join(destDir, fileName);
                 try {
                     fsExtra.copySync(sourceFile, destFile);
 
@@ -47,7 +51,7 @@ function buildAssets(platforms) {
 
 
 function buildRasterImages(platforms) {
-    var sourceDir = "app/resources/images/";
+    let sourceDir = "app/resources/images/";
     glob(sourceDir + "**/*[.png|.jpg]", function(err, files) {
         files.forEach(function(sourcePath) {
             if (sourcePath.indexOf("@") == -1) { //already converted
@@ -63,12 +67,12 @@ function buildRasterImages(platforms) {
                         let originalHeight = metadata.height;
 
                         platforms.forEach(platform => {
-                            for (var i = 0; i < ratios.length; i++) {
+                            for (let i = 0; i < ratios.length; i++) {
                                 (function (m) {
-                                    var factor = m / 4;
+                                    let factor = m / 4;
 
                                     if (platform.ratios.indexOf(m) != -1) {
-                                        var dest = platform.mapImagePath(destDir, imageName, ".png", m);
+                                        let dest = platform.mapImagePath(destDir, imageName, ".png", m);
                                         if (dest == null) {
                                             return;
                                         }
@@ -119,25 +123,25 @@ function buildRasterImages(platforms) {
 }
 
 function buildSvgImages(platforms) {
-    var sourceDir = "app/resources/images/";
+    let sourceDir = "app/resources/images/";
     glob(sourceDir + "**/*.svg", function(err, files) {
         files.forEach(function(sourcePath) {
             console.log("Working on " + sourcePath);
             if (sourcePath.indexOf("@") == -1) { //already converted
                 easyimage.info(sourcePath).then(function (info) {
-                    var ext = path.extname(sourcePath).toLowerCase();
-                    var relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
-                    var imageName = path.basename(sourcePath, ext);
-                    var ratios = PLATFORMS.android.ratios;
-                    for (var i = 0; i < ratios.length; i++) {
+                    let ext = path.extname(sourcePath).toLowerCase();
+                    let relativeDir = path.dirname(sourcePath.replace(sourceDir, "")) + "/";
+                    let imageName = path.basename(sourcePath, ext);
+                    let ratios = PLATFORMS.android.ratios;
+                    for (let i = 0; i < ratios.length; i++) {
                         (function (m) {
-                            var factor = m;
+                            let factor = m;
                             pn.readFile(sourcePath)
                                 .then(buffer => svg2png(buffer, {width: parseInt(info.width * factor), height: parseInt(info.height * factor)}))
                                 .then(buffer => {
                                     platforms.forEach(platform => {
                                         if (platform.ratios.indexOf(m) != -1) {
-                                            var dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
+                                            let dest = platform.mapImagePath(relativeDir, imageName, ".png", m);
                                             if (dest == null) {
                                                 return;
                                             }
@@ -169,7 +173,7 @@ function buildSvgImages(platforms) {
 }
 
 function getCombined(combinedList, moduleName) {
-    for (var i = 0; i < combinedList.length; i++) {
+    for (let i = 0; i < combinedList.length; i++) {
         if (combinedList[i].module == moduleName) {
             return combinedList[i]
         }
@@ -179,7 +183,7 @@ function getCombined(combinedList, moduleName) {
 }
 
 function combinedNeedsUpdate(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName)
+    let combined = getCombined(combinedList, moduleName)
     if (combined != null) {
         return combined.dirty
     } else {
@@ -188,7 +192,7 @@ function combinedNeedsUpdate(combinedList, moduleName) {
 }
 
 function setCombined(combinedList, moduleName, source) {
-    var combined = getCombined(combinedList, moduleName)
+    let combined = getCombined(combinedList, moduleName)
     if (combined == null) {
         combined = {module: moduleName}
         combinedList.push(combined)
@@ -199,152 +203,87 @@ function setCombined(combinedList, moduleName, source) {
 }
 
 function validateCombined(combinedList, moduleName) {
-    var combined = getCombined(combinedList, moduleName)
+    let combined = getCombined(combinedList, moduleName)
     if (combined != null) {
         combined.valid = true;
     }
 }
 
-var scriptsDir = "app/js/";
-var libsDir = "app/js/libs/";
-function buildScripts(platforms, production, cb) {
-    platforms.forEach(function (platform) {
-        if (platform.combineScripts) {
-            if (!platform.combined) {
-                platform.combined = [];
-            } else {
-                platform.combined.forEach(c => c.valid = false)
-            }
-        }
-    });
+function timestamp() {
+    let date = new Date();
 
-    glob(scriptsDir + "**/*.{js,jsx}", function (error, files) {
-        files.forEach(function (sourceFile) {
-            sourceFile = sourceFile.replace(/\\/g, "/")
+    let hour = date.getHours();
+    let min = date.getMinutes();
+    let sec = date.getSeconds();
+    let millis = date.getMilliseconds();
 
-            var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
-            var scriptName = path.posix.basename(sourceFile);
-            var moduleName = path.posix.join(relativeDir, scriptName);
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    sec = (sec < 10 ? "0" : "") + sec;
 
-            if (sourceFile.indexOf(libsDir) != -1) {
+    ///let str = hour + ":" + min + ":" + sec + "." + millis;
+    let str = hour + ":" + min + ":" + sec;
+
+    return str;
+}
+
+export function buildScripts(platforms, production, cb, watch = false) {
+    let scriptsDir = "./app/js/";
+    let entryPoint = scriptsDir + "app.js";
+
+    let bundler = browserify(entryPoint, { debug: true, cache: {}, packageCache: {}, extensions: [".js", ".jsx"] })
+        .transform(babelify, {presets: [require.resolve("@babel/preset-env"), require.resolve("@babel/preset-react")]})
+
+    if (watch) {
+        bundler = watchify(bundler);
+    }
+
+    function rebundle() {
+        console.log("[" + timestamp() + "] " + "Bundling " + entryPoint + "...");
+
+        const pipeline = bundler.bundle()    
+            .pipe(source(entryPoint))
+            .pipe(buffer())
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write("./source_maps", {sourceMappingURL: function(file) { return "app.js.map"; }}))
+            .pipe(vfs.dest("./build"))
+            .on("error", function (err) {
+                console.error(err);
+                this.emit("end");
+            })
+            .on("finish", function () {
+                const sourceFile = "./build/app/js/app.js";
+                const sourceMapFile = "./build/source_maps/app/js/app.js.map";
+
                 platforms.forEach(function (platform) {
-                    var jsDir = platform.mapAssetPath("js");
-                    var destDir = path.posix.join(jsDir, relativeDir);
-                    var destFile = path.posix.join(destDir, scriptName);
-                    try {
-                        if (platform.combineScripts) {
-                            if (combinedNeedsUpdate(platform.combined, moduleName)) {
-                                var source = fs.readFileSync(sourceFile);
-                                setCombined(platform.combined, moduleName, source)
+                    const destDir = platform.mapAssetPath("js");
+                    const destFile = path.posix.join(destDir, "app.js");
+                    const destMapFile = path.posix.join(destDir, "app.js.map");
+                    try {                        
+                        fsExtra.copySync(sourceFile, destFile);
+                        console.log("[COPIED] " + sourceFile + " == " + destFile);                        
 
-                                console.log("[COMBINELIB] " + moduleName);
-                            } else {
-                                console.log("[CACHEDLIB] " + moduleName);
-                            }
-                            validateCombined(platform.combined, moduleName);
-                        } else {
-                            fsExtra.copySync(sourceFile, destFile);
-                            console.log("[COPIED] " + sourceFile + " == " + destFile);
-                        }
+                        fsExtra.copySync(sourceMapFile, destMapFile);
+                        console.log("[COPIED] " + sourceMapFile + " == " + destMapFile);   
                     } catch (error) {
                         console.log(error.message);
                         console.log(error.stack);
                         process.exit(1);
                     }
                 });
-                return;
-            }
-
-            moduleName = moduleName.replace(".jsx", ".js");
-            var result = null;
-            function getResult() {
-                if (result == null) {
-                    result = babel.transformFileSync(sourceFile, {presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve)});
-                }
-
-                return result;
-            }
-
-            platforms.forEach(function (platform) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = path.posix.join(jsDir, relativeDir);
-                var destFile = path.posix.join(destDir, scriptName);
-                destFile = destFile.replace(".jsx", ".js");
-                try {
-                    if (platform.combineScripts) {
-                        if (combinedNeedsUpdate(platform.combined, moduleName)) {
-                            setCombined(platform.combined, moduleName, getResult().code)
-
-                            console.log("[COMBINED] " + moduleName);
-                        } else {
-                            console.log("[CACHED] " + moduleName);
-                        }
-
-                        validateCombined(platform.combined, moduleName)
-                    } else {
-                        fsExtra.mkdirpSync(destDir);
-
-                        if (production) {
-                            let uglified = uglifyjs.minify(getResult().code)
-
-                            fs.writeFileSync(destFile, uglified.code);
-
-                            console.log("[COMPILED.MIN] " + sourceFile + " == " + destFile);
-                        } else {
-                            fs.writeFileSync(destFile, getResult().code);
-                            console.log("[COMPILED] " + sourceFile + " => " + destFile);
-                        }
-                    }
-                } catch (error) {
-                    console.log(error.message);
-                    console.log(error.stack);
-                    process.exit(1);
-                }
+                console.log("[" + timestamp() + "] " + "READY!");
             });
+            
+    }
+
+    if (watch) {
+        bundler.on("update", function() {
+            rebundle();
         });
+    }
 
-        platforms.forEach(function (platform) {
-            if (platform.combineScripts) {
-                var jsDir = platform.mapAssetPath("js");
-                var destDir = jsDir;
-                var destFile = path.posix.join(destDir, "app.js");
-
-                var code = "";
-
-                platform.combined.forEach(function (c) {
-                    let definePath =  c.module.replace(/\\/g, "/")
-                    if (c.valid) {
-                        code += ("define('" + definePath + "', function(module, exports) {\n" +
-                                    c.source + "\n" +
-                                 "});\n")
-                    }
-                });
-
-                code += "\nrequire('./aj').createRuntime();";
-                code += "\nrequire('./main').main();"
-
-                fsExtra.mkdirpSync(destDir);
-
-                if (production) {
-                    let result = uglifyjs.minify(code)
-
-                    fs.writeFileSync(destFile, result.code);
-
-                    console.log("[WRITTEN.MIN] " + destFile);
-                } else {
-                    fs.writeFileSync(destFile, code);
-
-                    console.log("[WRITTEN] " + destFile);
-                }
-            }
-        });
-
-        if (cb) {
-            cb()
-        }
-    });
-
-};
+    rebundle();
+}
 
 function buildAppIcon(platforms) {
     let appIcon = "app/resources/app_icon.png";
@@ -545,7 +484,7 @@ function buildDefinitions(platforms) {
     }))
 }
 
-module.exports = function build(_platforms, types, production, scriptsCb) {
+export default function build(_platforms, types, production, scriptsCb) {
     if (!utils.isApp()) {
         console.error("Please run this command on app root directory");
         return;

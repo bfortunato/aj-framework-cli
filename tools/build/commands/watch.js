@@ -15,6 +15,9 @@ var fs = require("fs");
 var fsExtra = require("fs-extra");
 var player = require("play-sound")();
 
+var _require = require("./build"),
+    buildScripts = _require.buildScripts;
+
 var utils = require("../utils");
 
 var ALL_PLATFORMS = [];
@@ -130,15 +133,7 @@ function watchScripts(_platforms) {
         });
     }
 
-    var watcher = watch(scriptsDir + "**/*.{js,jsx}");
-
-    watcher.on("add", function (path) {
-        transpile(path, selectedPlatforms);
-    });
-
-    watcher.on("change", function (path) {
-        transpile(path, selectedPlatforms);
-    });
+    buildScripts(selectedPlatforms, false, null, true);
 }
 
 module.exports = function watch(platforms) {
