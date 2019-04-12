@@ -8,7 +8,6 @@ var _commands = require("../commands");
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-var babel = require("babel-core");
 var watch = require("glob-watcher");
 var path = require("path");
 var fs = require("fs");
@@ -41,74 +40,6 @@ function log(msg) {
 
 function notify(type) {
     player.play(__dirname + "/../../resources/" + type + ".mp3", function (err) {});
-}
-
-function transpile(sourceFile, platforms) {
-    sourceFile = sourceFile.replace(/\\/g, "/");
-
-    var relativeDir = path.posix.dirname(sourceFile.replace(scriptsDir, ""));
-    var scriptName = path.posix.basename(sourceFile);
-    var moduleName = path.posix.join(relativeDir, scriptName);
-    moduleName = moduleName.replace(".jsx", ".js");
-
-    function getCombined(combinedList, moduleName) {
-        for (var i = 0; i < combinedList.length; i++) {
-            if (combinedList[i].module == moduleName) {
-                return combinedList[i];
-            }
-        }
-
-        return null;
-    }
-
-    function touchCombined(combinedList, moduleName) {
-        var combined = getCombined(combinedList, moduleName);
-        if (combined != null) {
-            combined.dirty = true;
-        }
-    }
-
-    babel.transformFile(sourceFile, { presets: ["babel-preset-es2015", "babel-preset-react"].map(require.resolve) }, function (err, result) {
-        if (err) {
-            notify("error");
-            console.log(err.message);
-            console.log(err.codeFrame);
-        } else {
-            platforms.forEach(function (platform) {
-                if (platform.combineScripts) {
-                    if (!platform.combined) {
-                        platform.combined = [];
-                    }
-
-                    try {
-                        touchCombined(platform.combined, moduleName);
-                        (0, _commands.build)([platform.name], ["scripts"], false, function () {
-                            return notify("build");
-                        });
-                    } catch (error) {
-                        console.log(error.message);
-                        console.log(error.stack);
-                    }
-                } else {
-                    var jsDir = platform.mapAssetPath("js");
-                    var destDir = path.posix.join(jsDir, relativeDir);
-                    var destFile = path.posix.join(destDir, scriptName);
-                    destFile = destFile.replace(".jsx", ".js");
-                    try {
-                        fsExtra.mkdirpSync(destDir);
-                        fs.writeFileSync(destFile, result.code);
-                    } catch (error) {
-                        console.log(error.message);
-                        console.log(error.stack);
-                    }
-                }
-            });
-
-            log("[COMPILED] " + sourceFile);
-
-            notify("watch");
-        }
-    });
 }
 
 function watchScripts(_platforms) {
