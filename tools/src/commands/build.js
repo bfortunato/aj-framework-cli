@@ -234,23 +234,17 @@ export function buildScripts(platforms, production, cb, watch = false) {
         .transform(babelify, {presets: [require.resolve("@babel/preset-env"), require.resolve("@babel/preset-react")]})
 
     if (watch) {
-        bundler = watchify(bundler);
+        bundler.plugin(watchify);
     }
 
     function rebundle() {
         console.log("[" + timestamp() + "] " + "Bundling " + entryPoint + "...");
 
         const pipeline = bundler.bundle()    
-            .pipe(source(entryPoint))
-            .pipe(buffer())
-            .pipe(sourcemaps.init({loadMaps: true}))
-            .pipe(sourcemaps.write("./source_maps", {sourceMappingURL: function(file) { return "app.js.map"; }}))
-            .pipe(vfs.dest("./build"))
             .on("error", function (err) {
                 console.error(err);
-                this.emit("end");
             })
-            .on("finish", function () {
+            .on("end", function () {
                 const sourceFile = "./build/app/js/app.js";
                 const sourceMapFile = "./build/source_maps/app/js/app.js.map";
 
@@ -271,7 +265,12 @@ export function buildScripts(platforms, production, cb, watch = false) {
                     }
                 });
                 console.log("[" + timestamp() + "] " + "READY!");
-            });
+            })
+            .pipe(source(entryPoint))
+            .pipe(buffer())
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write("./source_maps", {sourceMappingURL: function(file) { return "app.js.map"; }}))
+            .pipe(vfs.dest("./build"))
             
     }
 
