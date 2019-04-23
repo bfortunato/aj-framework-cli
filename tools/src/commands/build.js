@@ -245,6 +245,14 @@ export function buildScripts(platforms, production, cb, watch = false) {
                 console.error(err);
             })
             .on("end", function () {
+                console.log("[" + timestamp() + "] " + "READY!");
+            })
+            .pipe(source(entryPoint))
+            .pipe(buffer())
+            .pipe(sourcemaps.init({loadMaps: true}))
+            .pipe(sourcemaps.write("./source_maps", {sourceMappingURL: function(file) { return "app.js.map"; }}))
+            .pipe(vfs.dest("./build"))
+            .on("finish", function() {
                 const sourceFile = "./build/app/js/app.js";
                 const sourceMapFile = "./build/source_maps/app/js/app.js.map";
 
@@ -264,13 +272,7 @@ export function buildScripts(platforms, production, cb, watch = false) {
                         process.exit(1);
                     }
                 });
-                console.log("[" + timestamp() + "] " + "READY!");
             })
-            .pipe(source(entryPoint))
-            .pipe(buffer())
-            .pipe(sourcemaps.init({loadMaps: true}))
-            .pipe(sourcemaps.write("./source_maps", {sourceMappingURL: function(file) { return "app.js.map"; }}))
-            .pipe(vfs.dest("./build"))
             
     }
 

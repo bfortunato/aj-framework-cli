@@ -255,6 +255,10 @@ function buildScripts(platforms, production, cb) {
         var pipeline = bundler.bundle().on("error", function (err) {
             console.error(err);
         }).on("end", function () {
+            console.log("[" + timestamp() + "] " + "READY!");
+        }).pipe(source(entryPoint)).pipe(buffer()).pipe(sourcemaps.init({ loadMaps: true })).pipe(sourcemaps.write("./source_maps", { sourceMappingURL: function sourceMappingURL(file) {
+                return "app.js.map";
+            } })).pipe(vfs.dest("./build")).on("finish", function () {
             var sourceFile = "./build/app/js/app.js";
             var sourceMapFile = "./build/source_maps/app/js/app.js.map";
 
@@ -274,10 +278,7 @@ function buildScripts(platforms, production, cb) {
                     process.exit(1);
                 }
             });
-            console.log("[" + timestamp() + "] " + "READY!");
-        }).pipe(source(entryPoint)).pipe(buffer()).pipe(sourcemaps.init({ loadMaps: true })).pipe(sourcemaps.write("./source_maps", { sourceMappingURL: function sourceMappingURL(file) {
-                return "app.js.map";
-            } })).pipe(vfs.dest("./build"));
+        });
     }
 
     if (watch) {

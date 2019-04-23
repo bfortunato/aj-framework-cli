@@ -12,7 +12,7 @@ function list(val) {
     return val.split(',');
 }
 
-program.version("aj-framework-cli v1.1.2");
+program.version("aj-framework-cli v1.1.3");
 
 program.command("init <path>").description("Creates a new AJ project in specified path").action(function (path) {
     (0, _commands.init)(path);
